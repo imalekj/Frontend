@@ -1,0 +1,162 @@
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap');
+
+:root {
+  --zuj-green: #1a5d44;
+  --zuj-green-light: rgba(26, 93, 68, 0.05);
+  --zuj-text-dark: #2d3436;
+  --zuj-text-muted: #636e72;
+}
+
+body {
+  font-family: 'Cairo', sans-serif;
+  direction: rtl;
+  text-align: right;
+  background-color: #fcfdfd;
+  font-size: 0.88rem;
+  /* الخط الصغير المعتمد */
+}
+
+/* الرابط والخط الأخضر المتحرك */
+.custom-link {
+  position: relative;
+  font-weight: 700 !important;
+  color: var(--zuj-text-muted) !important;
+  font-size: 0.82rem !important;
+  padding: 6px 12px !important;
+}
+
+.custom-link.active {
+  color: var(--zuj-green) !important;
+}
+
+.custom-link.active::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 20%;
+  width: 60%;
+  height: 2px;
+  background-color: var(--zuj-green);
+  border-radius: 10px;
+  animation: slideGrow 0.3s ease-out;
+}
+
+@keyframes slideGrow {
+  from {
+    width: 0;
+    opacity: 0;
+  }
+
+  to {
+    width: 60%;
+    opacity: 1;
+  }
+}
+
+/* الأزرار المينيمال */
+.btn-zuj-main {
+  background-color: var(--zuj-green);
+  color: #fff !important;
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 7px 22px;
+  border-radius: 8px;
+  border: none;
+  transition: 0.3s;
+}
+
+.btn-zuj-main:hover {
+  background-color: #144633;
+  transform: translateY(-1px);
+}
+
+.zuj-card {
+  background: #fff;
+  border: 1px solid #f1f2f6;
+  border-radius: 12px;
+}
+
+.animate-up {
+  animation: fadeInUp 0.4s ease forwards;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(15px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fw-black {
+  font-weight: 900 !important;
+}
+/* تقسيم الـ 7 أعمدة بالتساوي */
+.row-cols-7 > .col {
+    width: 14.2857% !important;
+    flex: 0 0 14.2857%;
+}
+
+.calendar-day-box {
+    transition: all 0.3s ease;
+}
+
+.calendar-day-box:hover {
+    background-color: #f0fdf4 !important; /* لون أخضر خفيف جداً عند المرور */
+    z-index: 5;
+    box-shadow: inset 0 0 15px rgba(26, 93, 68, 0.05);
+}
+
+.event-tag {
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.event-tag:hover {
+    transform: scale(1.02);
+}
+
+/* للموبايل: تقليل الارتفاع قليلاً */
+@media (max-width: 768px) {
+    .calendar-day-box {
+        min-height: 100px !important;
+    }
+}
+/* تقسيم 7 أعمدة للتقويم */
+.row-cols-7 > .col {
+    width: 14.2857%;
+    flex: 0 0 14.2857%;
+}
+
+.hover-scale {
+    transition: transform 0.2s ease;
+}
+
+.hover-scale:hover {
+    transform: scale(1.1);
+    background-color: #144633 !important;
+}
+
+.card {
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+}
+.btn-success {
+    background-color: #1a5d44 !important;
+    border: none;
+}
+
+/* حركة بسيطة عند تمرير الماوس فوق الزر العائم */
+.position-fixed button:hover {
+    transform: scale(1.1) rotate(90deg);
+    transition: all 0.3s ease;
+    background-color: #144633 !important;
+}
