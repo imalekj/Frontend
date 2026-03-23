@@ -32,7 +32,7 @@ export const Login = () => {
     setIsLoading(true);
 
     try {
-        const response = await fetch("https://localhost:7011/api/home/login", {
+        const response = await fetch("https://localhost:7011/api/Login/login", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
