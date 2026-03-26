@@ -5,7 +5,7 @@ import Swal from 'sweetalert2';
 export const TeamDetails = () => {
     const navigate = useNavigate();
     const mainGreen = '#1a5d44';
-    
+
     const teamData = {
         id: "T-908",
         name: "فريق تطوير منصة الخريجين",
@@ -49,7 +49,7 @@ export const TeamDetails = () => {
 
     return (
         <div className="container py-5 text-end" dir="rtl" style={{ fontFamily: 'Cairo, sans-serif' }}>
-            
+
             <style>
                 {`
                     .detail-card { border-radius: 25px; border: none; overflow: hidden; }
@@ -58,6 +58,8 @@ export const TeamDetails = () => {
                     .member-item:hover { background: #f8f9fa; transform: translateY(-3px); border-color: ${mainGreen}; }
                     .link-box { background: #f8f9fa; border-radius: 15px; padding: 15px; transition: 0.3s; text-decoration: none; color: inherit; display: block; }
                     .link-box:hover { background: #eef2f0; border-color: ${mainGreen}; }
+                    .btn-action { border-radius: 15px; transition: 0.3s; }
+                    .btn-action:hover { opacity: 0.9; transform: scale(1.02); }
                 `}
             </style>
 
@@ -82,20 +84,19 @@ export const TeamDetails = () => {
                         <div className="row g-3">
                             {teamData.members.map(member => (
                                 <div key={member.id} className="col-md-6">
-                                
-                                    <div 
+                                    <div
                                         className="member-item p-3 d-flex align-items-center gap-3"
                                         onClick={() => navigate(`/profile/${member.id}`)}
                                     >
-                                        <img 
-                                            src={getDefaultAvatar(member.id + member.name)} 
-                                            style={{ width: '50px', height: '50px', borderRadius: '12px' }} 
-                                            alt="avatar" 
+                                        <img
+                                            src={getDefaultAvatar(member.id + member.name)}
+                                            style={{ width: '50px', height: '50px', borderRadius: '12px' }}
+                                            alt="avatar"
                                         />
                                         <div>
                                             <h6 className="fw-bold mb-0">
-                                                {member.name} 
-                                                {member.isOwner && <span className="ms-2 badge bg-warning text-dark small" style={{fontSize: '0.6rem'}}>قائد</span>}
+                                                {member.name}
+                                                {member.isOwner && <span className="ms-2 badge bg-warning text-dark small" style={{ fontSize: '0.6rem' }}>قائد</span>}
                                             </h6>
                                             <small className="text-muted">{member.role}</small>
                                         </div>
@@ -107,7 +108,8 @@ export const TeamDetails = () => {
                 </div>
 
                 <div className="col-lg-4">
-                    <div className="card detail-card shadow-sm p-4 bg-white mb-4">
+                    {/* روابط سريعة */}
+                    <div className="card detail-card shadow-sm p-4 bg-white mb-4 border-0">
                         <h5 className="fw-bold mb-4">روابط سريعة</h5>
                         <a href={teamData.githubUrl} target="_blank" rel="noreferrer" className="link-box mb-3 border">
                             <div className="d-flex align-items-center">
@@ -120,32 +122,40 @@ export const TeamDetails = () => {
                         </a>
                     </div>
 
-                    <div className="card detail-card shadow-sm p-4 bg-white">
-                        <h5 className="fw-bold mb-4">الإجراءات</h5>
-                        <button 
-                            className="btn w-100 py-3 mb-3 fw-bold shadow-sm"
-                            style={{ background: mainGreen, color: 'white', borderRadius: '15px' }}
-                            onClick={() => navigate(`/evaluate/${teamData.id}`)}
+
+                    <div className="card detail-card shadow-sm p-4 bg-white border-0">
+                        <h5 className="fw-bold mb-4">إدارة الفريق</h5>
+
+                        <button
+                            className="btn w-100 py-3 mb-3 fw-bold shadow-sm btn-action text-white"
+                            style={{ background: '#2c3e50' }}
+                            onClick={() => navigate(`/todo-list/${teamData.id}`)}
                         >
-                            <i className="bi bi-star-fill me-2"></i> تقييم أعضاء الفريق
-                        </button>
-                        
-                    
-                        <button 
-                            className="btn btn-outline-danger w-100 py-3 fw-bold" 
-                            style={{ borderRadius: '15px' }}
-                            onClick={handleLeaveTeam}
-                        >
-                            <i className="bi bi-box-arrow-right me-2"></i> مغادرة الفريق
-                        </button>
-                        
-                        <hr className="my-4 opacity-25" />
-                        <div className="text-center">
-                            <small className="text-muted">تاريخ الإنشاء: {teamData.createdAt}</small>
-                        </div>
+                        <i className="bi bi-check2-square me-2"></i> قائمة مهام الفريق
+                    </button>
+
+                    <button
+                        className="btn w-100 py-3 mb-3 fw-bold shadow-sm btn-action"
+                        style={{ background: mainGreen, color: 'white' }}
+                        onClick={() => navigate(`/evaluate/${teamData.id}`)}
+                    >
+                        <i className="bi bi-star-fill me-2"></i> تقييم أعضاء الفريق
+                    </button>
+
+                    <button
+                        className="btn btn-outline-danger w-100 py-3 fw-bold btn-action"
+                        onClick={handleLeaveTeam}
+                    >
+                        <i className="bi bi-box-arrow-right me-2"></i> مغادرة الفريق
+                    </button>
+
+                    <hr className="my-4 opacity-25" />
+                    <div className="text-center">
+                        <small className="text-muted small">تاريخ الإنشاء: {teamData.createdAt}</small>
                     </div>
                 </div>
             </div>
         </div>
+        </div >
     );
 };

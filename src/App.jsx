@@ -27,8 +27,10 @@ import { Notifications } from './pages/Notifications';
 import { Leaderboard } from './pages/Leaderboard';
 import { TeamEvaluation } from './pages/TeamEvaluation';
 import { MyTeams } from './pages/MyTeams';
-// --- إضافة استيراد صفحة تفاصيل الفريق ---
 import { TeamDetails } from './pages/TeamDetails'; 
+
+// استيراد صفحة المهام
+import { TodoListPage } from './pages/TodoListPage'; 
 
 const ScrollToTop = () => {
   const { pathname } = useLocation();
@@ -54,14 +56,17 @@ function App() {
         <main className="flex-grow-1">
           <Suspense fallback={<div className="text-center py-5"><div className="spinner-border text-success"></div></div>}>
             <Routes>
+              {/* المسارات العامة */}
               <Route path="/" element={<Dashboard />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/verify-email" element={<VerifyEmail />} />
               <Route path="/competitions" element={<CompetitionsPage />} />
               <Route path="/competition/:id" element={<CompetitionDetails />} />
               <Route path="/leaderboard" element={<Leaderboard />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/verify-email" element={<VerifyEmail />} />
               <Route path="/profile/:userId" element={<UserProfile />} />
+              <Route path="/registration/:id" element={<RegistrationPage />} />
 
+              {/* المسارات المحمية */}
               <Route path="/setup-profile" element={<ProtectedRoute><SetupProfile /></ProtectedRoute>} />
               <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
               <Route path="/edit-profile" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
@@ -69,16 +74,15 @@ function App() {
               <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
               <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
               <Route path="/chat/:id" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
-
               <Route path="/my-teams" element={<ProtectedRoute><MyTeams /></ProtectedRoute>} />
-              
-              {/* --- مسار تفاصيل الفريق الجديد --- */}
               <Route path="/team-details/:teamId" element={<ProtectedRoute><TeamDetails /></ProtectedRoute>} />
-              
-              <Route path="/registration/:id" element={<RegistrationPage />} />
               <Route path="/manage-requests/:id" element={<ProtectedRoute><RequestsPage /></ProtectedRoute>} />
               <Route path="/evaluate/:teamId" element={<ProtectedRoute><TeamEvaluation /></ProtectedRoute>} />
 
+              {/* حل مشكلة الزر: تأكد من تمرير المعرف بشكل صحيح وتغليفه بالحماية */}
+              <Route path="/todo-list/:teamId" element={<ProtectedRoute><TodoListPage /></ProtectedRoute>} />
+
+              {/* معالجة الأخطاء */}
               <Route path="/404" element={<div className="text-center py-5"><h1>404</h1><p>الصفحة غير موجودة</p></div>} />
               <Route path="*" element={<Navigate to="/" />} />
             </Routes>
