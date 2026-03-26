@@ -4,6 +4,8 @@ import Swal from 'sweetalert2';
 import zujLogo from '../assets/logo.png';
 
 export const Login = () => {
+
+ 
     const navigate = useNavigate();
     const mainGreen = '#1a5d44';
 
@@ -25,54 +27,56 @@ export const Login = () => {
         setCredentials({ ...credentials, [e.target.name]: e.target.value });
     };
 
-    const handleLogin = (e) => {
-        e.preventDefault();
-        
-        
-        if (credentials.identifier.length < 4) {
-            swalStyled.fire({
-                icon: 'warning',
-                title: 'بيانات غير مكتملة',
-                text: 'يرجى إدخال رقم جامعي أو بريد إلكتروني صحيح',
-                confirmButtonText: 'حسناً',
-                confirmButtonColor: mainGreen
+    const handleLogin = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    try {
+        const response = await fetch("https://localhost:7011/api/Login/login", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                identifier: credentials.identifier,
+                password: credentials.password
+            })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+
+
+            localStorage.setItem("token", data.token);
+        Swal.fire({
+            title: 'أهلاً بك مجدداً!',
+            text: data.message,
+            icon: 'success',
+            timer: 2000,
+            showConfirmButton: false,
+            timerProgressBar: true
+    }).then(() => {
+        navigate('/');
+    });
+        } else {
+            Swal.fire({
+                icon: 'error',
+                title: 'خطأ في الدخول',
+                text: data.message
             });
-            return;
         }
-
-        setIsLoading(true);
-
-    
-        setTimeout(() => {
-            if (credentials.password === "123456") {
-            
-                Swal.fire({
-                    title: 'أهلاً بك مجدداً!',
-                    text: 'جاري تحويلك إلى منصة الزيتونة...',
-                    icon: 'success',
-                    timer: 2000,
-                    showConfirmButton: false,
-                    timerProgressBar: true,
-                    didOpen: () => {
-                        Swal.showLoading();
-                    }
-                }).then(() => {
-                    setIsLoading(false);
-                    navigate('/'); 
-                });
-            } else {
-        
-                swalStyled.fire({
-                    icon: 'error',
-                    title: 'خطأ في الدخول',
-                    text: 'كلمة المرور التي أدخلتها غير صحيحة، يرجى المحاولة مرة أخرى',
-                    confirmButtonText: 'إعادة المحاولة',
-                });
-                setIsLoading(false);
-            }
-        }, 1500);
-    };
-
+    } catch (err) {
+        console.error(err);
+        Swal.fire({
+            icon: 'error',
+            title: 'حدث خطأ',
+            text: 'يرجى المحاولة لاحقاً'
+        });
+    } finally {
+        setIsLoading(false);
+    }
+};
     return (
         <div className="container" style={{ fontFamily: 'Cairo, sans-serif' }}>
             <style>
@@ -193,5 +197,9 @@ export const Login = () => {
                 </div>
             </div>
         </div>
+
+        
     );
+
+    
 };
