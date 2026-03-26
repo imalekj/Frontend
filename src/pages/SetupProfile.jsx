@@ -20,6 +20,7 @@ export const SetupProfile = () => {
         email: '',
         password: '',
         phoneNumber: '',
+        role: 'student',
         universityMajor: 'هندسة البرمجيات',
         workField: '',
         skills: [],
@@ -152,6 +153,14 @@ export const SetupProfile = () => {
                                         <label className="form-label">اسم المستخدم (UserName)</label>
                                         <input name="userName" type="text" className="form-control input-custom" value={formData.userName} onChange={handleInputChange} required />
                                     </div>
+                                    <div className="mb-3 text-end">
+                                        <label className="form-label">نوع الحساب</label>
+                                        <select name="role" className="form-select input-custom" value={formData.role} onChange={handleInputChange}>
+                                            <option value="student">طالب</option>
+                                            <option value="doctor">عضو هيئة تدريس (دكتور)</option>
+                                        </select>
+                                    </div>
+
 
                                     <div className="mb-4 text-end">
                                         <label className="form-label">كلمة المرور</label>
@@ -167,10 +176,10 @@ export const SetupProfile = () => {
                                 </div>
                             )}
 
-                        
+
                             {step === 2 && (
                                 <div className="animate__animated animate__fadeInRight">
-                                
+
                                     <div className="row g-3 mb-4 text-end">
                                         <div className="col-md-6">
                                             <label className="form-label">التخصص الجامعي</label>
@@ -200,7 +209,7 @@ export const SetupProfile = () => {
                                         </div>
                                     </div>
 
-                                
+
                                     <div className="mb-4 text-end">
                                         <div className="d-flex justify-content-between align-items-center mb-3">
                                             <label className="form-label mb-0">المشاريع السابقة (إن وجدت)</label>
@@ -236,7 +245,7 @@ export const SetupProfile = () => {
                                         ))}
                                     </div>
 
-                                
+
                                     <div className="mb-5 text-end">
                                         <label className="form-label">رابط الحساب الشخصي (GitHub Profile)</label>
                                         <div className="input-group" dir="ltr">
@@ -246,7 +255,7 @@ export const SetupProfile = () => {
                                         </div>
                                     </div>
 
-                                
+
                                     <div className="d-flex gap-3">
                                         <button type="button" onClick={prevStep} className="btn btn-light flex-grow-1 py-3 rounded-4 fw-bold text-muted border">
                                             <i className="bi bi-arrow-right me-2"></i> السابق

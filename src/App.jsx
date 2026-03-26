@@ -27,7 +27,7 @@ import { Notifications } from './pages/Notifications';
 import { Leaderboard } from './pages/Leaderboard';
 import { TeamEvaluation } from './pages/TeamEvaluation';
 import { MyTeams } from './pages/MyTeams';
-import { TeamDetails } from './pages/TeamDetails'; 
+
 
 // استيراد صفحة المهام
 import { TodoListPage } from './pages/TodoListPage'; 
