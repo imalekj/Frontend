@@ -7,7 +7,6 @@ export const SetupProfile = () => {
     const navigate = useNavigate();
     const mainGreen = '#1a5d44';
 
-
     const [step, setStep] = useState(1);
     const [loading, setLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
@@ -19,7 +18,6 @@ export const SetupProfile = () => {
         userName: '',
         email: '',
         password: '',
-        phoneNumber: '',
         role: 'student',
         universityMajor: 'هندسة البرمجيات',
         workField: '',
@@ -29,21 +27,35 @@ export const SetupProfile = () => {
         profileImage: null
     });
 
+    
+    const validatePassword = (pass) => {
+        const hasUpperCase = /[A-Z]/.test(pass);
+        const hasNumber = /[0-9]/.test(pass);
+        const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(pass);
+        return { hasUpperCase, hasNumber, hasSpecialChar };
+    };
+
+    const passwordStatus = validatePassword(formData.password);
+
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
     const nextStep = () => {
-
         if (!formData.fullName || !formData.userName || !formData.password) {
             return toast.error("يرجى إكمال البيانات الأساسية أولاً");
         }
+
+    
+        if (!passwordStatus.hasUpperCase || !passwordStatus.hasNumber || !passwordStatus.hasSpecialChar) {
+            return toast.error("يرجى استيفاء جميع شروط كلمة المرور");
+        }
+
         setStep(2);
     };
 
     const prevStep = () => setStep(1);
-
 
     const handleImageChange = (e) => {
         const file = e.target.files[0];
@@ -53,7 +65,6 @@ export const SetupProfile = () => {
             setFormData(prev => ({ ...prev, profileImage: file }));
         }
     };
-
 
     const addSkill = (e) => {
         if (e.key === 'Enter' && skillInput.trim() !== "") {
@@ -78,11 +89,10 @@ export const SetupProfile = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
-
         setTimeout(() => {
             Swal.fire({
                 title: 'تم بنجاح!',
-                text: 'تم إنشاء ملفك الشخصي ',
+                text: 'تم إنشاء ملفك الشخصي بنجاح',
                 icon: 'success',
                 confirmButtonColor: mainGreen
             }).then(() => navigate('/profile'));
@@ -93,7 +103,6 @@ export const SetupProfile = () => {
     return (
         <div className="container py-5" dir="rtl" style={{ fontFamily: 'Cairo, sans-serif' }}>
             <Toaster position="top-center" />
-
             <style>
                 {`
                     .setup-card { border-radius: 30px; border: none; background: white; overflow: hidden; min-height: 600px; }
@@ -104,14 +113,13 @@ export const SetupProfile = () => {
                     .step-indicator { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; margin: 0 auto 10px; }
                     .active-step { background: white; color: ${mainGreen}; }
                     .inactive-step { background: rgba(255,255,255,0.3); color: white; }
+                    .pass-hint { font-size: 0.75rem; margin-top: 5px; transition: 0.3s; }
                 `}
             </style>
 
             <div className="row justify-content-center">
                 <div className="col-lg-7">
-                    <div className="setup-card shadow-lg animate__animated animate__fadeIn">
-
-
+                    <div className="setup-card shadow-lg">
                         <div className="setup-header">
                             <div className="d-flex justify-content-center gap-4 mb-3">
                                 <div>
@@ -124,12 +132,10 @@ export const SetupProfile = () => {
                                     <small>الخبرات</small>
                                 </div>
                             </div>
-                            <h4 className="fw-900">{step === 1 ? "مرحباً بك! لنبدأ بالحساب" : "أخبرنا عن مهاراتك"}</h4>
+                            <h4 className="fw-bold">{step === 1 ? "مرحباً بك! لنبدأ بالحساب" : "أخبرنا عن مهاراتك"}</h4>
                         </div>
 
                         <form onSubmit={handleSubmit} className="p-4 p-md-5">
-
-                            {/* --- القسم الأول: بيانات الحساب --- */}
                             {step === 1 && (
                                 <div className="animate__animated animate__fadeInLeft">
                                     <div className="text-center mb-4">
@@ -150,9 +156,10 @@ export const SetupProfile = () => {
                                     </div>
 
                                     <div className="mb-3 text-end">
-                                        <label className="form-label">اسم المستخدم (UserName)</label>
+                                        <label className="form-label">اسم المستخدم</label>
                                         <input name="userName" type="text" className="form-control input-custom" value={formData.userName} onChange={handleInputChange} required />
                                     </div>
+
                                     <div className="mb-3 text-end">
                                         <label className="form-label">نوع الحساب</label>
                                         <select name="role" className="form-select input-custom" value={formData.role} onChange={handleInputChange}>
@@ -160,26 +167,35 @@ export const SetupProfile = () => {
                                             <option value="doctor">عضو هيئة تدريس (دكتور)</option>
                                         </select>
                                     </div>
-
-
                                     <div className="mb-4 text-end">
                                         <label className="form-label">كلمة المرور</label>
                                         <div className="position-relative">
                                             <input name="password" type={showPassword ? "text" : "password"} className="form-control input-custom" value={formData.password} onChange={handleInputChange} required />
                                             <i className={`bi ${showPassword ? 'bi-eye-slash' : 'bi-eye'} position-absolute top-50 start-0 translate-middle-y ms-3 cursor-pointer text-muted`} onClick={() => setShowPassword(!showPassword)}></i>
                                         </div>
+                                        
+                                        <div className="d-flex flex-wrap gap-2 mt-2" dir="rtl">
+                                            <span className={`pass-hint ${passwordStatus.hasUpperCase ? 'text-success' : 'text-muted'}`}>
+                                                <i className={`bi ${passwordStatus.hasUpperCase ? 'bi-check-circle-fill' : 'bi-circle'}`}></i> حرف كبير
+                                            </span>
+                                            <span className={`pass-hint ${passwordStatus.hasNumber ? 'text-success' : 'text-muted'}`}>
+                                                <i className={`bi ${passwordStatus.hasNumber ? 'bi-check-circle-fill' : 'bi-circle'}`}></i> أرقام
+                                            </span>
+                                            <span className={`pass-hint ${passwordStatus.hasSpecialChar ? 'text-success' : 'text-muted'}`}>
+                                                <i className={`bi ${passwordStatus.hasSpecialChar ? 'bi-check-circle-fill' : 'bi-circle'}`}></i> رمز خاص (!@#)
+                                            </span>
+                                        </div>
                                     </div>
 
-                                    <button type="button" onClick={nextStep} className="btn btn-success w-100 py-3 rounded-4 fw-bold shadow-sm" style={{ background: mainGreen }}>
+                                    <button type="button" onClick={nextStep} className="btn btn-success w-100 py-3 rounded-4 fw-bold" style={{ background: mainGreen }}>
                                         التالي <i className="bi bi-arrow-left ms-2"></i>
                                     </button>
                                 </div>
                             )}
 
-
                             {step === 2 && (
                                 <div className="animate__animated animate__fadeInRight">
-
+                                
                                     <div className="row g-3 mb-4 text-end">
                                         <div className="col-md-6">
                                             <label className="form-label">التخصص الجامعي</label>
@@ -191,81 +207,27 @@ export const SetupProfile = () => {
                                             </select>
                                         </div>
                                         <div className="col-md-6">
-                                            <label className="form-label">مجال العمل / الشغف التقني</label>
-                                            <input name="workField" type="text" className="form-control input-custom" placeholder="مثال: Full Stack Developer" value={formData.workField} onChange={handleInputChange} />
+                                            <label className="form-label">مجال الشغف التقني</label>
+                                            <input name="workField" type="text" className="form-control input-custom" placeholder="مثال: Full Stack" value={formData.workField} onChange={handleInputChange} />
                                         </div>
                                     </div>
 
-                                    {/* المهارات */}
                                     <div className="mb-4 text-end">
-                                        <label className="form-label">المهارات التقنية (Enter للإضافة)</label>
-                                        <input type="text" className="form-control input-custom" placeholder="JavaScript, React, SQL..." value={skillInput} onChange={(e) => setSkillInput(e.target.value)} onKeyDown={addSkill} />
+                                        <label className="form-label">المهارات (Enter للإضافة)</label>
+                                        <input type="text" className="form-control input-custom" value={skillInput} onChange={(e) => setSkillInput(e.target.value)} onKeyDown={addSkill} />
                                         <div className="d-flex flex-wrap gap-2 mt-2">
                                             {formData.skills.map(s => (
-                                                <span key={s} className="badge bg-success-subtle text-success p-2 rounded-pill fw-bold border-0 shadow-sm">
+                                                <span key={s} className="badge bg-success-subtle text-success p-2 rounded-pill border-0">
                                                     {s} <i className="bi bi-x-circle ms-1 cursor-pointer" onClick={() => removeSkill(s)}></i>
                                                 </span>
                                             ))}
                                         </div>
                                     </div>
 
-
-                                    <div className="mb-4 text-end">
-                                        <div className="d-flex justify-content-between align-items-center mb-3">
-                                            <label className="form-label mb-0">المشاريع السابقة (إن وجدت)</label>
-                                            <button type="button" className="btn btn-sm btn-outline-success rounded-pill px-3 fw-bold" onClick={addProjectField}>
-                                                <i className="bi bi-plus-lg me-1"></i> إضافة مشروع
-                                            </button>
-                                        </div>
-
-                                        {formData.pastProjects.map((proj, index) => (
-                                            <div key={index} className="p-3 mb-2 rounded-4 border bg-light animate__animated animate__fadeInUp shadow-sm position-relative">
-                                                <div className="row g-2">
-                                                    <div className="col-md-5">
-                                                        <input type="text" className="form-control form-control-sm border-0 bg-white rounded-3"
-                                                            placeholder="اسم المشروع" value={proj.title}
-                                                            onChange={(e) => handleProjectChange(index, 'title', e.target.value)} />
-                                                    </div>
-                                                    <div className="col-md-6">
-                                                        <input type="text" className="form-control form-control-sm border-0 bg-white rounded-3 text-start"
-                                                            dir="ltr" placeholder="Link (GitHub/Live)" value={proj.link}
-                                                            onChange={(e) => handleProjectChange(index, 'link', e.target.value)} />
-                                                    </div>
-                                                    <div className="col-md-1 d-flex align-items-center justify-content-center">
-                                                        {formData.pastProjects.length > 1 && (
-                                                            <i className="bi bi-trash text-danger cursor-pointer fs-5"
-                                                                onClick={() => {
-                                                                    const updated = formData.pastProjects.filter((_, i) => i !== index);
-                                                                    setFormData(prev => ({ ...prev, pastProjects: updated }));
-                                                                }}></i>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-
-
-                                    <div className="mb-5 text-end">
-                                        <label className="form-label">رابط الحساب الشخصي (GitHub Profile)</label>
-                                        <div className="input-group" dir="ltr">
-                                            <span className="input-group-text bg-white border-0 shadow-sm"><i className="bi bi-github"></i></span>
-                                            <input name="githubUrl" type="url" className="form-control input-custom border-0 shadow-sm"
-                                                placeholder="https://github.com/username" value={formData.githubUrl} onChange={handleInputChange} />
-                                        </div>
-                                    </div>
-
-
                                     <div className="d-flex gap-3">
-                                        <button type="button" onClick={prevStep} className="btn btn-light flex-grow-1 py-3 rounded-4 fw-bold text-muted border">
-                                            <i className="bi bi-arrow-right me-2"></i> السابق
-                                        </button>
-                                        <button type="submit" disabled={loading} className="btn btn-success flex-grow-1 py-3 rounded-4 fw-bold shadow-sm" style={{ background: mainGreen }}>
-                                            {loading ? (
-                                                <span className="spinner-border spinner-border-sm me-2"></span>
-                                            ) : (
-                                                "إنهاء إعداد الملف الشخصي"
-                                            )}
+                                        <button type="button" onClick={prevStep} className="btn btn-light flex-grow-1 py-3 rounded-4 border">السابق</button>
+                                        <button type="submit" disabled={loading} className="btn btn-success flex-grow-1 py-3 rounded-4 fw-bold" style={{ background: mainGreen }}>
+                                            {loading ? <span className="spinner-border spinner-border-sm"></span> : "إنهاء إعداد الملف الشخصي"}
                                         </button>
                                     </div>
                                 </div>
