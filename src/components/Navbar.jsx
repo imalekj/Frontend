@@ -6,12 +6,10 @@ import zujLogo from '../assets/logo.png';
 export const Navbar = () => {
     const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem('token'));
     const [userData, setUserData] = useState(JSON.parse(localStorage.getItem('user')) || {});
-    
-    const [notifCount, setNotifCount] = useState(3);
+    const [notifCount] = useState(3);
     const [showUserDropdown, setShowUserDropdown] = useState(false);
     const [showNotifDropdown, setShowNotifDropdown] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
-    
     const navigate = useNavigate();
     const mainGreen = '#1a5d44';
     const userRef = useRef(null);
@@ -25,6 +23,15 @@ export const Navbar = () => {
 
         window.addEventListener('storage', handleStorageChange);
         return () => window.removeEventListener('storage', handleStorageChange);
+    }, []);
+
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (userRef.current && !userRef.current.contains(event.target)) setShowUserDropdown(false);
+            if (notifRef.current && !notifRef.current.contains(event.target)) setShowNotifDropdown(false);
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
     const handleLogout = () => {
@@ -65,15 +72,6 @@ export const Navbar = () => {
             navigate(`/leaderboard?search=${searchQuery}`);
         }
     };
-
-    useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (userRef.current && !userRef.current.contains(event.target)) setShowUserDropdown(false);
-            if (notifRef.current && !notifRef.current.contains(event.target)) setShowNotifDropdown(false);
-        };
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
 
     return (
         <nav className="navbar navbar-expand-lg navbar-light bg-white border-bottom sticky-top py-2" dir="rtl" style={{ fontFamily: 'Cairo, sans-serif' }}>
@@ -134,7 +132,6 @@ export const Navbar = () => {
                 <div className="d-flex align-items-center gap-2 order-1 order-lg-2 me-auto me-lg-0 ms-2">
                     {isLoggedIn ? (
                         <>
-                        
                             <div className="position-relative" ref={notifRef}>
                                 <button className="btn btn-link p-2 text-secondary shadow-none position-relative" onClick={() => setShowNotifDropdown(!showNotifDropdown)}>
                                     <i className="bi bi-bell fs-5"></i>
@@ -155,12 +152,11 @@ export const Navbar = () => {
                                 <i className="bi bi-plus-lg ms-1"></i> نشر
                             </Link>
 
-                        
                             <div className="position-relative ms-1" ref={userRef}>
                                 <button className="btn border-0 p-1 d-flex align-items-center gap-2 shadow-none" onClick={() => setShowUserDropdown(!showUserDropdown)}>
                                     <div className="text-end d-none d-xl-block">
-                                        <div className="fw-bold text-dark lh-1" style={{ fontSize: '0.85rem' }}>{userData.fullName || "مستخدم"}</div>
-                                        <small className="text-muted" style={{ fontSize: '0.7rem' }}>{userData.universityMajor || "طالب"}</small>
+                                        <div className="fw-bold text-dark lh-1" style={{ fontSize: '0.85rem' }}>{userData.fullName || "مالك جابر"}</div>
+                                        <small className="text-muted" style={{ fontSize: '0.7rem' }}>{userData.universityMajor || "طالب تقنية معلومات"}</small>
                                     </div>
                                     <img 
                                         src={userData.profilePic || "https://static.vecteezy.com/system/resources/thumbnails/009/292/244/small/default-avatar-icon-of-social-media-user-vector.jpg"} 
