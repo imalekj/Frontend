@@ -4,7 +4,8 @@ import Swal from 'sweetalert2';
 import zujLogo from '../assets/logo.png';
 
 export const Navbar = () => {
-    const [isLoggedIn, setIsLoggedIn] = useState(true);
+    const [user, setUser] = useState(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem("token"));
     const [notifCount, setNotifCount] = useState(3);
     const [showUserDropdown, setShowUserDropdown] = useState(false);
     const [showNotifDropdown, setShowNotifDropdown] = useState(false);
@@ -16,15 +17,28 @@ export const Navbar = () => {
     const notifRef = useRef(null);
 
 
-    useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (userRef.current && !userRef.current.contains(event.target)) setShowUserDropdown(false);
-            if (notifRef.current && !notifRef.current.contains(event.target)) setShowNotifDropdown(false);
-        };
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
+  useEffect(() => {
+    const token = localStorage.getItem("token");
 
+    if (token) {
+        fetch("https://your-api.com/api/me", {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        })
+        .then(res => {
+            if (!res.ok) throw new Error("Unauthorized");
+            return res.json();
+        })
+        .then(data => {
+            setUser(data);
+            setIsLoggedIn(true);
+        })
+        .catch(() => {
+            setIsLoggedIn(false);
+        });
+    }
+}, []);
     const handleLogout = () => {
         setShowUserDropdown(false);
         
@@ -44,6 +58,7 @@ export const Navbar = () => {
             }
         }).then((result) => {
             if (result.isConfirmed) {
+            localStorage.removeItem("token");
                 setIsLoggedIn(false);
                 Swal.fire({
                     title: 'تم!',
@@ -145,7 +160,15 @@ export const Navbar = () => {
                             <div className="position-relative ms-1" ref={userRef}>
                                 <button className="btn border-0 p-1 d-flex align-items-center gap-2 shadow-none" onClick={() => setShowUserDropdown(!showUserDropdown)}>
                                     <div className="text-end d-none d-xl-block">
-                                        <div className="fw-bold text-dark lh-1" style={{ fontSize: '0.8rem' }}>مالك جابر</div>
+                                       
+
+
+                                        <div className="fw-bold text-dark lh-1" style={{ fontSize: '0.8rem' }}>
+                                                {user?.fullName || "..." }
+                                            </div>
+
+
+
                                     </div>
                                     <img src="https://static.vecteezy.com/system/resources/thumbnails/009/292/244/small/default-avatar-icon-of-social-media-user-vector.jpg" className="rounded-circle border" width="34" height="34" alt="user" />
                                 </button>
