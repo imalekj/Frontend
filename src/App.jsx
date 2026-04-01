@@ -11,7 +11,6 @@ import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
 
 import { Login } from './pages/Login';
-import { VerifyEmail } from './pages/VerifyEmail';
 import { SetupProfile } from './pages/SetupProfile';
 import { Dashboard } from './pages/Dashboard';
 import { CompetitionsPage } from './pages/CompetitionsPage';
@@ -57,18 +56,15 @@ function App() {
         <main className="flex-grow-1">
           <Suspense fallback={<div className="text-center py-5"><div className="spinner-border text-success"></div></div>}>
             <Routes>
-              {/* المسارات العامة */}
               <Route path="/" element={<Dashboard />} />
               <Route path="/login" element={<Login />} />
-              <Route path="/verify-email" element={<VerifyEmail />} />
               <Route path="/competitions" element={<CompetitionsPage />} />
               <Route path="/competition/:id" element={<CompetitionDetails />} />
               <Route path="/leaderboard" element={<Leaderboard />} />
               <Route path="/profile/:userId" element={<UserProfile />} />
               <Route path="/registration/:id" element={<RegistrationPage />} />
 
-              {/* المسارات المحمية */}
-              <Route path="/setup-profile" element={<ProtectedRoute><SetupProfile /></ProtectedRoute>} />
+              <Route path="/setup-profile" element={<SetupProfile />} />
               <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
               <Route path="/edit-profile" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
               <Route path="/create-post" element={<ProtectedRoute><CreatePost /></ProtectedRoute>} />

@@ -3,9 +3,10 @@ import { useNavigate, Link } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import zujLogo from '../assets/logo.png';
 
+
 export const Login = () => {
 
- 
+
     const navigate = useNavigate();
     const mainGreen = '#1a5d44';
 
@@ -180,7 +181,7 @@ export const Login = () => {
                         <div className="mt-2">
                             <div className="d-flex justify-content-between align-items-center small fw-bold">
                                 <a href="#" className="text-muted text-decoration-none">نسيت كلمة المرور؟</a>
-                                <Link to="/verify-email" className="text-success text-decoration-none">إنشاء حساب</Link>
+                                <Link to="/setup-profile" className="text-success text-decoration-none">إنشاء حساب</Link>
                             </div>
                         </div>
 

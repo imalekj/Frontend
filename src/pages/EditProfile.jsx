@@ -6,99 +6,43 @@ export const EditProfile = () => {
     const navigate = useNavigate();
     const mainGreen = '#1a5d44';
 
-    const [isAuthorized, setIsAuthorized] = useState(false);
-    const [imagePreview, setImagePreview] = useState("https://api.dicebear.com/7.x/avataaars/svg?seed=Felix");
-    const [skillInput, setSkillInput] = useState("");
-    const [skills, setSkills] = useState(["React.js", "UI/UX", "JavaScript"]);
-    const [completeness, setCompleteness] = useState(0);
+    const [imagePreview, setImagePreview] = useState("https://static.vecteezy.com/system/resources/thumbnails/009/292/244/small/default-avatar-icon-of-social-media-user-vector.jpg");
     const [loading, setLoading] = useState(false);
 
     const [formData, setFormData] = useState({
-        name: "مالك جابر",
-        major: "هندسة البرمجيات",
-        github: "malik-jaber",
-        bio: "مطور واجهات أمامية شغوف ببناء تجارب مستخدم فريدة تخدم مجتمع جامعة الزيتونة الأردنية."
-    });
-
-    useEffect(() => {
-        setIsAuthorized(true); 
-    }, []);
-
-    useEffect(() => {
-        let count = 0;
-        if (formData.name.trim().length > 3) count += 25;
-        if (formData.bio.trim().length > 10) count += 25;
-        if (skills.length >= 3) count += 25;
-        if (formData.github.trim()) count += 25;
-        setCompleteness(count);
-    }, [formData, skills]);
-
-
-    const swalStyled = Swal.mixin({
-        customClass: {
-            popup: 'rounded-4 shadow-lg',
-            confirmButton: 'btn btn-success px-4 py-2 mx-2 fw-bold',
-            cancelButton: 'btn btn-light px-4 py-2 mx-2 fw-bold border'
-        },
-        buttonsStyling: false,
-        fontFamily: 'Cairo'
+        fullName: "مالك جابر",
+        workField: "Full Stack Developer",
+        githubUrl: "https://github.com/malik-jaber",
+        pastProjects: [
+            { title: "نظام إدارة المكتبات", link: "https://github.com/..." }
+        ]
     });
 
     const handleImageChange = (e) => {
         const file = e.target.files[0];
         if (file) {
             if (file.size > 2 * 1024 * 1024) {
-                return swalStyled.fire({
+                return Swal.fire({
                     icon: 'error',
-                    title: 'حجم ملف كبير',
-                    text: 'الأقصى المسموح به هو 2MB فقط',
-                    confirmButtonText: 'حسناً'
+                    title: 'حجم الملف كبير',
+                    text: 'الحد الأقصى هو 2MB',
+                    confirmButtonColor: mainGreen
                 });
             }
             setImagePreview(URL.createObjectURL(file));
-            
-            Swal.fire({
-                icon: 'success',
-                title: 'تم تحديث الصورة',
-                toast: true,
-                position: 'top-end',
-                showConfirmButton: false,
-                timer: 3000,
-                timerProgressBar: true
-            });
         }
     };
 
-    const addSkill = (e) => {
-        if (e.key === 'Enter' && skillInput.trim() !== "") {
-            e.preventDefault();
-            const newSkill = skillInput.trim();
-            if (!skills.includes(newSkill)) {
-                setSkills([...skills, newSkill]);
-                setSkillInput("");
-            } else {
-                swalStyled.fire({
-                    icon: 'warning',
-                    text: 'هذه المهارة مضافة مسبقاً',
-                    confirmButtonText: 'فهمت'
-                });
-            }
-        }
+    const handleProjectChange = (index, field, value) => {
+        const updatedProjects = [...formData.pastProjects];
+        updatedProjects[index][field] = value;
+        setFormData({ ...formData, pastProjects: updatedProjects });
     };
 
-    const removeSkill = (skillToRemove) => {
-        swalStyled.fire({
-            title: 'هل أنت متأكد؟',
-            text: `سيتم حذف مهارة "${skillToRemove}" من ملفك`,
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonText: 'نعم، احذفها',
-            cancelButtonText: 'تراجع',
-            reverseButtons: true
-        }).then((result) => {
-            if (result.isConfirmed) {
-                setSkills(skills.filter(s => s !== skillToRemove));
-            }
+    const addProjectField = () => {
+        setFormData({
+            ...formData,
+            pastProjects: [...formData.pastProjects, { title: "", link: "" }]
         });
     };
 
@@ -106,134 +50,98 @@ export const EditProfile = () => {
         e.preventDefault();
         setLoading(true);
 
-    
         Swal.fire({
-            title: 'جاري الحفظ',
-            html: 'يرجى الانتظار لحظات...',
+            title: 'جاري الحفظ...',
             allowOutsideClick: false,
-            didOpen: () => {
-                Swal.showLoading();
-            }
+            didOpen: () => { Swal.showLoading(); }
         });
         
         try {
-        
-            await new Promise(resolve => setTimeout(resolve, 1500));
-            
+            await new Promise(resolve => setTimeout(resolve, 1000));
             Swal.fire({
                 icon: 'success',
-                title: 'تم الحفظ!',
-                text: 'تم تحديث ملفك الشخصي بنجاح',
-                confirmButtonColor: mainGreen,
-                confirmButtonText: 'رائع'
-            }).then(() => {
-                navigate('/profile');
-            });
+                title: 'تم التحديث',
+                text: 'تم حفظ التعديلات بنجاح',
+                confirmButtonColor: mainGreen
+            }).then(() => navigate('/profile'));
         } catch (err) {
-            Swal.fire({
-                icon: 'error',
-                title: 'فشل الحفظ',
-                text: 'حدث خطأ غير متوقع، حاول مرة أخرى'
-            });
+            Swal.fire({ icon: 'error', title: 'حدث خطأ ما' });
         } finally {
             setLoading(false);
         }
     };
 
-    if (!isAuthorized) return null;
-
     return (
-        <div className="container py-5" style={{ fontFamily: 'Cairo, sans-serif' }}>
+        <div className="container py-5 text-end" dir="rtl" style={{ fontFamily: 'Cairo, sans-serif' }}>
             <style>
                 {`
-                    .swal2-popup { font-family: 'Cairo', sans-serif !important; }
-                    .zuj-card { border-radius: 30px; border: 1px solid #f0f0f0; }
-                    .form-control, .form-select {
-                        border-radius: 12px;
-                        padding: 12px 20px;
-                        background-color: #f8f9fa;
-                        border: 1px solid #eee;
+                    .edit-card { border-radius: 25px; border: none; background: white; }
+                    .form-control { border-radius: 12px; padding: 12px; background-color: #f8fafc; border: 1px solid #e2e8f0; }
+                    .form-control:focus { border-color: ${mainGreen}; box-shadow: 0 0 0 0.2rem rgba(26, 93, 68, 0.1); }
+                    .avatar-wrapper { width: 120px; height: 120px; margin: 0 auto; position: relative; }
+                    .avatar-img { width: 100%; height: 100%; border-radius: 35px; object-fit: cover; border: 4px solid #fff; }
+                    .upload-badge { 
+                        position: absolute; bottom: -5px; left: -5px; 
+                        background: ${mainGreen}; color: white; width: 35px; height: 35px; 
+                        border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer;
                     }
-                    .form-control:focus {
-                        border-color: ${mainGreen};
-                        box-shadow: 0 0 0 0.25rem rgba(26, 93, 68, 0.1);
-                        background-color: #fff;
-                    }
-                    .skill-badge { animation: fadeIn 0.3s ease; }
-                    @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-                    
-                    .camera-btn { width: 42px; height: 42px; border: 4px solid #fff !important; }
-                    .progress-custom { height: 10px; border-radius: 10px; background: #e9ecef; }
+                    .project-box { background: #f1f5f9; border-radius: 15px; padding: 15px; margin-bottom: 12px; }
                 `}
             </style>
 
             <div className="row justify-content-center">
-                <div className="col-lg-8 col-xl-7">
-                    <div className="card zuj-card shadow-lg border-0 p-4 p-md-5 bg-white text-end" dir="rtl">
-                        
-                        <div className="text-center mb-5">
-                            <h4 className="fw-bold mb-2">تعديل الملف الشخصي</h4>
-                            <div className="progress progress-custom mx-auto mt-3" style={{maxWidth: '250px'}}>
-                                <div 
-                                    className="progress-bar progress-bar-striped progress-bar-animated" 
-                                    style={{width: `${completeness}%`, backgroundColor: mainGreen}}
-                                ></div>
-                            </div>
-                            <small className="text-muted d-block mt-2">اكتمال الملف: {completeness}%</small>
-                        </div>
+                <div className="col-lg-7">
+                    <div className="card edit-card shadow-lg p-4 p-md-5">
+                        <h4 className="fw-bold mb-4 text-center">تعديل بيانات الحساب</h4>
 
                         <form onSubmit={handleSave}>
-                            <div className="text-center mb-5">
-                                <div className="position-relative d-inline-block">
-                                    <img 
-                                        src={imagePreview} 
-                                        className="rounded-circle border shadow-sm" 
-                                        width="130" height="130" alt="Avatar" 
-                                    />
-                                    <label htmlFor="file-upload" className="camera-btn btn btn-success position-absolute bottom-0 start-0 rounded-circle shadow p-0 d-flex align-items-center justify-content-center cursor-pointer">
-                                        <i className="bi bi-camera-fill"></i>
-                                    </label>
-                                    <input id="file-upload" type="file" hidden onChange={handleImageChange} accept="image/*" />
-                                </div>
+                            {/* 1. تعديل الصورة */}
+                            <div className="avatar-wrapper mb-5 shadow-sm">
+                                <img src={imagePreview} className="avatar-img shadow-sm" alt="Profile" />
+                                <label htmlFor="img-input" className="upload-badge shadow">
+                                    <i className="bi bi-camera-fill"></i>
+                                </label>
+                                <input id="img-input" type="file" hidden onChange={handleImageChange} accept="image/*" />
                             </div>
 
                             <div className="row g-4">
-                                <div className="col-md-6">
-                                    <label className="small fw-bold mb-2">الاسم الكامل</label>
-                                    <input type="text" className="form-control" value={formData.name} required onChange={(e) => setFormData({...formData, name: e.target.value})} />
-                                </div>
-
-                                <div className="col-md-6">
-                                    <label className="small fw-bold mb-2">GitHub</label>
-                                    <input type="text" className="form-control text-start" dir="ltr" value={formData.github} onChange={(e) => setFormData({...formData, github: e.target.value})} />
-                                </div>
-
+                                {/* 2. الاسم الكامل */}
                                 <div className="col-12">
-                                    <label className="small fw-bold mb-2">التخصص</label>
-                                    <select className="form-select" value={formData.major} onChange={(e) => setFormData({...formData, major: e.target.value})}>
-                                        <option>هندسة البرمجيات</option>
-                                        <option>علم الحاسوب</option>
-                                        <option>الأمن السيبراني</option>
-                                        <option>الذكاء الاصطناعي</option>
-                                    </select>
+                                    <label className="small fw-bold mb-2 text-secondary">الاسم الكامل</label>
+                                    <input type="text" className="form-control fw-bold" value={formData.fullName} 
+                                        onChange={(e) => setFormData({...formData, fullName: e.target.value})} required />
                                 </div>
 
+                                {/* 3. مجال العمل */}
                                 <div className="col-12">
-                                    <label className="small fw-bold mb-2">المهارات (Enter للإضافة)</label>
-                                    <input type="text" className="form-control mb-3" placeholder="أضف مهارة..." value={skillInput} onChange={(e) => setSkillInput(e.target.value)} onKeyDown={addSkill} />
-                                    <div className="d-flex flex-wrap gap-2">
-                                        {skills.map((skill, index) => (
-                                            <span key={index} className="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 py-2 px-3 rounded-pill d-flex align-items-center gap-2">
-                                                {skill}
-                                                <i className="bi bi-x-circle-fill text-danger cursor-pointer" onClick={() => removeSkill(skill)}></i>
-                                            </span>
-                                        ))}
+                                    <label className="small fw-bold mb-2 text-secondary">مجال العمل / التخصص الدقيق</label>
+                                    <input type="text" className="form-control" placeholder="مثلاً: Frontend Developer" 
+                                        value={formData.workField} onChange={(e) => setFormData({...formData, workField: e.target.value})} />
+                                </div>
+
+                                {/* 4. رابط GitHub */}
+                                <div className="col-12">
+                                    <label className="small fw-bold mb-2 text-secondary">رابط ملف GitHub</label>
+                                    <input type="url" className="form-control text-start" dir="ltr" 
+                                        value={formData.githubUrl} onChange={(e) => setFormData({...formData, githubUrl: e.target.value})} />
+                                </div>
+
+                                {/* 5. المشاريع السابقة */}
+                                <div className="col-12">
+                                    <div className="d-flex justify-content-between align-items-center mb-3">
+                                        <label className="small fw-bold text-secondary">المشاريع البرمجية</label>
+                                        <button type="button" className="btn btn-sm btn-outline-success px-3 rounded-pill fw-bold" onClick={addProjectField}>
+                                            + إضافة مشروع
+                                        </button>
                                     </div>
-                                </div>
-
-                                <div className="col-12">
-                                    <label className="small fw-bold mb-2">النبذة التعريفية</label>
-                                    <textarea className="form-control" rows="4" value={formData.bio} onChange={(e) => setFormData({...formData, bio: e.target.value})}></textarea>
+                                    {formData.pastProjects.map((project, index) => (
+                                        <div key={index} className="project-box">
+                                            <input type="text" className="form-control mb-2 bg-white" placeholder="اسم المشروع" 
+                                                value={project.title} onChange={(e) => handleProjectChange(index, 'title', e.target.value)} />
+                                            <input type="url" className="form-control bg-white text-start" dir="ltr" placeholder="رابط المشروع" 
+                                                value={project.link} onChange={(e) => handleProjectChange(index, 'link', e.target.value)} />
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
 
