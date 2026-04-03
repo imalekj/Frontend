@@ -5,11 +5,8 @@ import zujLogo from '../assets/logo.png';
 import { useAuth } from '../context/AuthContext';
 
 export const Navbar = () => {
-    
     const { user, token, logout } = useAuth();
-    
-    
-    const isLoggedIn = !!token;
+    const isLoggedIn = !!token && token !== "undefined";
     
     const [notifCount] = useState(3);
     const [showUserDropdown, setShowUserDropdown] = useState(false);
@@ -19,7 +16,6 @@ export const Navbar = () => {
     const mainGreen = '#1a5d44';
     const userRef = useRef(null);
     const notifRef = useRef(null);
-
 
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -32,7 +28,6 @@ export const Navbar = () => {
 
     const handleLogout = () => {
         setShowUserDropdown(false);
-        
         Swal.fire({
             title: 'تسجيل الخروج',
             text: "هل أنت متأكد من أنك تريد مغادرة المنصة؟",
@@ -46,9 +41,7 @@ export const Navbar = () => {
             customClass: { popup: 'rounded-4 shadow-lg', title: 'fw-bold' }
         }).then((result) => {
             if (result.isConfirmed) {
-                // 3. استدعاء دالة logout من السياق
                 logout(); 
-                
                 Swal.fire({
                     title: 'تم!',
                     text: 'تم تسجيل خروجك بنجاح.',
@@ -149,7 +142,7 @@ export const Navbar = () => {
                             <div className="position-relative ms-1" ref={userRef}>
                                 <button className="btn border-0 p-1 d-flex align-items-center gap-2 shadow-none" onClick={() => setShowUserDropdown(!showUserDropdown)}>
                                     <div className="text-end d-none d-xl-block">
-                                        <div className="fw-bold text-dark lh-1" style={{ fontSize: '0.85rem' }}>{user?.fullName || "مستخدم"}</div>
+                                        <div className="fw-bold text-dark lh-1" style={{ fontSize: '0.85rem' }}>{user?.fullName || user?.name || "مستخدم"}</div>
                                         <small className="text-muted" style={{ fontSize: '0.7rem' }}>{user?.universityMajor || "طالب تقنية معلومات"}</small>
                                     </div>
                                     <img 
