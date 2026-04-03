@@ -90,7 +90,7 @@ export const CompetitionsPage = () => {
                     .tab-btn.active {
                         background: white;
                         color: ${mainGreen};
-                        shadow: 0 2px 8px rgba(0,0,0,0.05);
+                        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
                     }
                     .comp-card {
                         border: 1px solid #edf2f7;
@@ -128,19 +128,44 @@ export const CompetitionsPage = () => {
                         padding: 10px;
                         border-radius: 4px;
                     }
+                    .btn-create {
+                        background: ${mainGreen};
+                        color: white;
+                        border-radius: 12px;
+                        padding: 10px 24px;
+                        font-weight: 800;
+                        transition: 0.3s;
+                        border: none;
+                    }
+                    .btn-create:hover {
+                        background: #144935;
+                        color: white;
+                        transform: scale(1.05);
+                    }
                 `}
             </style>
 
             <div className="page-header d-md-flex justify-content-between align-items-center">
-                <div>
-                    <h2 className="fw-900 mb-2">استكشاف الفرص</h2>
-                    <p className="text-muted fw-bold small">اكتشف المسابقات الرسمية ومشاريع التخرج القائمة</p>
+                <div className="d-flex align-items-center gap-3">
+                    <div>
+                        <h2 className="fw-900 mb-2">استكشاف الفرص</h2>
+                        <p className="text-muted fw-bold small mb-0">اكتشف المسابقات الرسمية ومشاريع التخرج القائمة</p>
+                    </div>
+                    
+                    <button 
+                        className="btn btn-create shadow-sm ms-3 d-flex align-items-center gap-2"
+                        onClick={() => navigate('/create-post')}
+                    >
+                        <i className="bi bi-plus-circle-fill fs-5"></i>
+                        <span>نشر</span>
+                    </button>
                 </div>
-                <div className="search-container mt-3 mt-md-0" style={{ width: '350px' }}>
+                
+                <div className="search-container mt-3 mt-md-0" style={{ width: '300px' }}>
                     <div className="position-relative">
                         <input 
                             type="text" 
-                            className="form-control" 
+                            className="form-control shadow-sm border-0" 
                             placeholder="ابحث عن مهارة أو عنوان..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
@@ -196,7 +221,7 @@ export const CompetitionsPage = () => {
                             <div className="card-body p-4">
                                 <div className="d-flex justify-content-between mb-2">
                                     <span className="category-label">{item.category}</span>
-                                    <span className="text-muted x-small fw-bold" style={{fontSize: '0.7rem'}}>{item.date}</span>
+                                    <span className="text-muted fw-bold" style={{fontSize: '0.7rem'}}>{item.date}</span>
                                 </div>
                                 <h6 className="fw-900 mb-3" style={{ lineHeight: '1.5', height: '2.8em', overflow: 'hidden' }}>{item.title}</h6>
                                 

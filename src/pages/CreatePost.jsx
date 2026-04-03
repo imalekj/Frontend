@@ -22,9 +22,9 @@ export const CreatePost = () => {
     useEffect(() => {
         const user = localStorage.getItem('user');
         if (!user) {
-            navigate('/');
+            navigate('/login');
         } else {
-            setIsAuthorized(true);
+            setIsAuthorized(false);
         }
     }, [navigate]);
 
