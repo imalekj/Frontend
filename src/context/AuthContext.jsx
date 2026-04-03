@@ -1,36 +1,28 @@
-import React, { createContext, useState, useEffect, useContext } from 'react';
-
+import React, { createContext, useState, useContext, useEffect } from 'react';
 
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-
-    const getInitialUser = () => {
-        try {
-            const savedUser = localStorage.getItem('user');
-            // التأكد أن القيمة موجودة وليست نص "undefined" أو فارغة
-            if (savedUser && savedUser !== "undefined" && savedUser !== "null") {
-                return JSON.parse(savedUser);
-            }
-        } catch (error) {
-            console.error("Error parsing user from localStorage:", error);
-        }
-        return null;
-    };
-
     const [token, setToken] = useState(localStorage.getItem('token') || null);
-    const [user, setUser] = useState(getInitialUser());
+    const [user, setUser] = useState(() => {
+        const savedUser = localStorage.getItem('user');
+        try {
+            return savedUser && savedUser !== "undefined" ? JSON.parse(savedUser) : null;
+        } catch {
+            return null;
+        }
+    });
 
     const login = (userToken, userData) => {
-    
-        localStorage.setItem('token', userToken);
+        // التأكد من تخزين التوكن كنص وليس ككائن
+        const tokenString = typeof userToken === 'object' ? userToken.token : userToken;
+
+        localStorage.setItem('token', tokenString);
         localStorage.setItem('user', JSON.stringify(userData));
-        
-    
-        setToken(userToken);
+
+        setToken(tokenString);
         setUser(userData);
     };
-
 
     const logout = () => {
         localStorage.removeItem('token');
@@ -39,28 +31,11 @@ export const AuthProvider = ({ children }) => {
         setUser(null);
     };
 
-    useEffect(() => {
-        const handleStorageChange = () => {
-            setToken(localStorage.getItem('token'));
-            setUser(getInitialUser());
-        };
-        window.addEventListener('storage', handleStorageChange);
-        return () => window.removeEventListener('storage', handleStorageChange);
-    }, []);
-
     return (
-        <AuthContext.Provider value={{ token, user, login, logout, isLoggedIn: !!token }}>
+        <AuthContext.Provider value={{ token, user, login, logout }}>
             {children}
         </AuthContext.Provider>
     );
 };
 
-export const useAuth = () => {
-    const context = useContext(AuthContext);
-    if (!context) {
-        throw new Error("useAuth must be used within an AuthProvider");
-    }
-    return context;
-};
-
-export default AuthContext;
+export const useAuth = () => useContext(AuthContext);

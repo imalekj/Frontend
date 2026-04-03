@@ -6,11 +6,10 @@ import 'bootstrap/dist/css/bootstrap.rtl.min.css';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 import 'animate.css';
 import './App.css';
-import { AuthProvider } from './context/AuthContext';
 
+import { AuthProvider, useAuth } from './context/AuthContext';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
-
 import { Login } from './pages/Login';
 import { SetupProfile } from './pages/SetupProfile';
 import { Dashboard } from './pages/Dashboard';
@@ -28,10 +27,7 @@ import { Leaderboard } from './pages/Leaderboard';
 import { TeamEvaluation } from './pages/TeamEvaluation';
 import { MyTeams } from './pages/MyTeams';
 import { TeamDetails } from './pages/TeamDetails';
-
-
-// استيراد صفحة المهام
-import { TodoListPage } from './pages/TodoListPage'; 
+import { TodoListPage } from './pages/TodoListPage';
 
 const ScrollToTop = () => {
   const { pathname } = useLocation();
@@ -42,57 +38,50 @@ const ScrollToTop = () => {
 };
 
 const ProtectedRoute = ({ children }) => {
-  const isAuthenticated = true; 
-  return isAuthenticated ? children : <Navigate to="/login" />;
+  const { token } = useAuth();
+  return token ? children : <Navigate to="/login" />;
 };
 
 function App() {
   return (
     <AuthProvider>
-    <Router>
-      <ScrollToTop />
-      <Toaster position="top-center" reverseOrder={false} />
-      <div className="min-vh-100 d-flex flex-column bg-light shadow-sm" style={{ fontFamily: 'Cairo, sans-serif' }}>
-        <Navbar />
+      <Router>
+        <ScrollToTop />
+        <Toaster position="top-center" reverseOrder={false} />
+        <div className="min-vh-100 d-flex flex-column bg-light shadow-sm" style={{ fontFamily: 'Cairo, sans-serif' }}>
+          <Navbar />
+          <main className="flex-grow-1">
+            <Suspense fallback={<div className="text-center py-5"><div className="spinner-border text-success"></div></div>}>
+              <Routes>
+                <Route path="/" element={<Dashboard />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/competitions" element={<CompetitionsPage />} />
+                <Route path="/competition/:id" element={<CompetitionDetails />} />
+                <Route path="/leaderboard" element={<Leaderboard />} />
+                <Route path="/profile/:userId" element={<UserProfile />} />
+                <Route path="/registration/:id" element={<RegistrationPage />} />
+                <Route path="/setup-profile" element={<SetupProfile />} />
+                
+                <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+                <Route path="/edit-profile" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
+                <Route path="/create-post" element={<ProtectedRoute><CreatePost /></ProtectedRoute>} />
+                <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
+                <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
+                <Route path="/chat/:id" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
+                <Route path="/my-teams" element={<ProtectedRoute><MyTeams /></ProtectedRoute>} />
+                <Route path="/team-details/:teamId" element={<ProtectedRoute><TeamDetails /></ProtectedRoute>} />
+                <Route path="/manage-requests/:id" element={<ProtectedRoute><RequestsPage /></ProtectedRoute>} />
+                <Route path="/evaluate/:teamId" element={<ProtectedRoute><TeamEvaluation /></ProtectedRoute>} />
+                <Route path="/todo-list/:teamId" element={<ProtectedRoute><TodoListPage /></ProtectedRoute>} />
 
-        <main className="flex-grow-1">
-          <Suspense fallback={<div className="text-center py-5"><div className="spinner-border text-success"></div></div>}>
-            <Routes>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/competitions" element={<CompetitionsPage />} />
-              <Route path="/competition/:id" element={<CompetitionDetails />} />
-              <Route path="/leaderboard" element={<Leaderboard />} />
-              <Route path="/profile/:userId" element={<UserProfile />} />
-              <Route path="/registration/:id" element={<RegistrationPage />} />
-
-              
-
-              <Route path="/setup-profile" element={<SetupProfile />} />
-              <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-              <Route path="/edit-profile" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
-              <Route path="/create-post" element={<ProtectedRoute><CreatePost /></ProtectedRoute>} />
-              <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
-              <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
-              <Route path="/chat/:id" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
-              <Route path="/my-teams" element={<ProtectedRoute><MyTeams /></ProtectedRoute>} />
-              <Route path="/team-details/:teamId" element={<ProtectedRoute><TeamDetails /></ProtectedRoute>} />
-              <Route path="/manage-requests/:id" element={<ProtectedRoute><RequestsPage /></ProtectedRoute>} />
-              <Route path="/evaluate/:teamId" element={<ProtectedRoute><TeamEvaluation /></ProtectedRoute>} />
-
-            
-              <Route path="/todo-list/:teamId" element={<ProtectedRoute><TodoListPage /></ProtectedRoute>} />
-
-              {/* معالجة الأخطاء */}
-              <Route path="/404" element={<div className="text-center py-5"><h1>404</h1><p>الصفحة غير موجودة</p></div>} />
-              <Route path="*" element={<Navigate to="/" />} />
-            </Routes>
-          </Suspense>
-        </main>
-
-        <Footer />
-      </div>
-    </Router>
+                <Route path="/404" element={<div className="text-center py-5"><h1>404</h1><p>الصفحة غير موجودة</p></div>} />
+                <Route path="*" element={<Navigate to="/" />} />
+              </Routes>
+            </Suspense>
+          </main>
+          <Footer />
+        </div>
+      </Router>
     </AuthProvider>
   );
 }
