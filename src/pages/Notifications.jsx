@@ -1,45 +1,39 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import 'bootstrap-icons/font/bootstrap-icons.css';
+import { useAuth } from '../context/AuthContext';
 
 export const Notifications = () => {
     const navigate = useNavigate();
+    const { user } = useAuth();
     const mainGreen = '#1a5d44';
+    
     const [filter, setFilter] = useState('all');
+    const [notifications, setNotifications] = useState([]);
+    const [loading, setLoading] = useState(true);
 
-    const [notifications, setNotifications] = useState([
-        {
-            id: 1,
-            type: 'request_accept',
-            user: 'أحمد علي',
-            content: 'وافق على طلب انضمامك لفريق هاكاثون الزيتونة!',
-            time: 'منذ 5 دقائق',
-            isRead: false,
-            link: '/competition/101',
-            category: 'teams'
-        },
-        {
-            id: 2,
-            type: 'new_request',
-            user: 'سارة خالد',
-            content: 'أرسلت طلباً للانضمام إلى مسابقتك (مشروع التخرج الذكي).',
-            time: 'منذ ساعتين',
-            isRead: false,
-            link: '/manage-requests/202',
-            category: 'teams'
-        },
-        {
-            id: 3,
-            type: 'system',
-            user: 'بوابة المبدعين',
-            content: 'أهلاً بك في منصة جامعة الزيتونة! ابدأ باستكشاف المسابقات المتاحة.',
-            time: 'منذ يوم',
-            isRead: true,
-            link: '/competitions',
-            category: 'system'
-        }
-    ]);
+    // 1. جلب التنبيهات من السيرفر عند تحميل الصفحة
+    useEffect(() => {
+        const fetchNotifications = async () => {
+            if (!user?.identifier) return;
+            try {
+                // استبدل المسار بالـ API الحقيقي الخاص بك
+                const response = await fetch(`https://localhost:7011/api/Notifications/GetUserNotifications/${user.identifier}`, {
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    setNotifications(data);
+                }
+            } catch (error) {
+                console.error("Error fetching notifications:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchNotifications();
+    }, [user]);
 
     const swalStyled = Swal.mixin({
         customClass: {
@@ -50,63 +44,74 @@ export const Notifications = () => {
         fontFamily: 'Cairo'
     });
 
+    // 2. منطق الفلترة
     const filteredNotifs = notifications.filter(n => {
         if (filter === 'unread') return !n.isRead;
-        if (filter === 'teams') return n.category === 'teams';
+        if (filter === 'teams') return n.category === 'teams' || n.type.includes('request');
         return true;
     });
 
-    const markAsRead = (id) => {
-        setNotifications(notifications.map(n => n.id === id ? { ...n, isRead: true } : n));
+    // 3. تحديث حالة التنبيه كـ "مقروء" في السيرفر
+    const markAsRead = async (id) => {
+        try {
+            await fetch(`https://localhost:7011/api/Notifications/MarkAsRead/${id}`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+            });
+            setNotifications(notifications.map(n => n.id === id ? { ...n, isRead: true } : n));
+        } catch (error) {
+            console.error("Error marking as read:", error);
+        }
     };
 
     const deleteNotif = (e, id) => {
         e.stopPropagation();
-        
         swalStyled.fire({
             title: 'هل أنت متأكد؟',
-            text: "لن تتمكن من استعادة هذا التنبيه بعد حذفه!",
+            text: "سيتم إزالة هذا التنبيه نهائياً من مركزك الشخصي.",
             icon: 'warning',
             showCancelButton: true,
             confirmButtonText: 'نعم، احذفه',
             cancelButtonText: 'إلغاء',
-            confirmButtonColor: '#dc3545',
             reverseButtons: true
-        }).then((result) => {
+        }).then(async (result) => {
             if (result.isConfirmed) {
-                setNotifications(notifications.filter(n => n.id !== id));
-                Swal.fire({
-                    icon: 'success',
-                    title: 'تم الحذف',
-                    timer: 1500,
-                    showConfirmButton: false,
-                    toast: true,
-                    position: 'top-end'
-                });
+                try {
+                    // طلب الحذف من السيرفر
+                    await fetch(`https://localhost:7011/api/Notifications/Delete/${id}`, {
+                        method: 'DELETE',
+                        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+                    });
+                    setNotifications(notifications.filter(n => n.id !== id));
+                    
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'تم الحذف بنجاح',
+                        timer: 1500,
+                        showConfirmButton: false,
+                        toast: true,
+                        position: 'top-end'
+                    });
+                } catch (error) {
+                    Swal.fire('خطأ', 'حدثت مشكلة أثناء الحذف', 'error');
+                }
             }
         });
     };
 
-    const markAllRead = () => {
-        if (notifications.every(n => n.isRead)) {
-            Swal.fire({
-                text: 'جميع التنبيهات مقروءة بالفعل',
-                icon: 'info',
-                confirmButtonText: 'حسناً',
-                confirmButtonColor: mainGreen
-            });
-            return;
-        }
+    const markAllRead = async () => {
+        if (notifications.every(n => n.isRead)) return;
 
-        setNotifications(notifications.map(n => ({ ...n, isRead: true })));
-        
-        Swal.fire({
-            title: 'رائع!',
-            text: 'تم تحديد جميع التنبيهات كمقروءة',
-            icon: 'success',
-            confirmButtonColor: mainGreen,
-            timer: 2000
-        });
+        try {
+            await fetch(`https://localhost:7011/api/Notifications/MarkAllRead/${user.identifier}`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+            });
+            setNotifications(notifications.map(n => ({ ...n, isRead: true })));
+            Swal.fire({ title: 'تمت القراءة', text: 'تم تحديد جميع التنبيهات كمقروءة', icon: 'success', confirmButtonColor: mainGreen });
+        } catch (error) {
+            console.error("Error marking all read:", error);
+        }
     };
 
     return (
@@ -168,21 +173,19 @@ export const Notifications = () => {
                         justify-content: center;
                         box-shadow: 0 4px 10px rgba(0,0,0,0.04);
                     }
-                    .swal2-popup { border-radius: 25px !important; font-family: 'Cairo', sans-serif !important; }
                 `}
             </style>
 
             <div className="row justify-content-center">
                 <div className="col-lg-7">
-                    
-                    <div className="mb-5">
-                        <div className="d-flex justify-content-between align-items-center mb-4">
+                    <div className="mb-5 text-center text-md-end">
+                        <div className="d-flex flex-column flex-md-row justify-content-between align-items-center mb-4 gap-3">
                             <div>
-                                <h3 className="fw-900 mb-1" style={{ color: mainGreen }}>مركز التنبيهات</h3>
-                                <p className="text-muted small">تابع آخر التحديثات والطلبات الخاصة بك</p>
+                                <h3 className="fw-bold mb-1" style={{ color: mainGreen }}>مركز التنبيهات</h3>
+                                <p className="text-muted small mb-0">تنبيهات منصة مشاريع جامعة الزيتونة</p>
                             </div>
-                            <button onClick={markAllRead} className="btn btn-light btn-sm rounded-pill px-3 fw-bold border">
-                                <i className="bi bi-check2-all ms-1"></i> قراءة الكل
+                            <button onClick={markAllRead} className="btn btn-light btn-sm rounded-pill px-4 fw-bold border shadow-sm">
+                                <i className="bi bi-check2-all ms-2"></i> قراءة الكل
                             </button>
                         </div>
 
@@ -194,7 +197,12 @@ export const Notifications = () => {
                     </div>
 
                     <div className="d-flex flex-column gap-3">
-                        {filteredNotifs.length > 0 ? (
+                        {loading ? (
+                            <div className="text-center py-5">
+                                <div className="spinner-border text-success" role="status"></div>
+                                <p className="mt-2 text-muted">جاري تحميل تنبيهاتك...</p>
+                            </div>
+                        ) : filteredNotifs.length > 0 ? (
                             filteredNotifs.map((n) => (
                                 <div 
                                     key={n.id} 
@@ -231,14 +239,13 @@ export const Notifications = () => {
                                 </div>
                             ))
                         ) : (
-                            <div className="text-center py-5 bg-white rounded-5 shadow-sm border border-dashed">
-                                <i className="bi bi-patch-check display-4 text-muted opacity-25"></i>
-                                <h5 className="text-muted mt-3 fw-bold">أنت مطلع على كل شيء!</h5>
-                                <p className="small text-secondary">لا توجد إشعارات تطابق الفلتر الحالي.</p>
+                            <div className="text-center py-5 bg-light rounded-5 border border-dashed shadow-sm">
+                                <i className="bi bi-bell-slash display-4 text-muted opacity-25"></i>
+                                <h5 className="text-muted mt-3 fw-bold">لا توجد تنبيهات</h5>
+                                <p className="small text-secondary px-3">بمجرد حدوث نشاط جديد على ملفك أو فريقك، سيظهر هنا.</p>
                             </div>
                         )}
                     </div>
-
                 </div>
             </div>
         </div>

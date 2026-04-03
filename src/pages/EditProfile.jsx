@@ -2,20 +2,24 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 
+import { useAuth } from '../context/AuthContext'; 
+
 export const EditProfile = () => {
     const navigate = useNavigate();
+    
+    const { user, login } = useAuth(); 
+    
     const mainGreen = '#1a5d44';
 
-    const [imagePreview, setImagePreview] = useState("https://static.vecteezy.com/system/resources/thumbnails/009/292/244/small/default-avatar-icon-of-social-media-user-vector.jpg");
+    const [imagePreview, setImagePreview] = useState(user?.image || "https://static.vecteezy.com/system/resources/thumbnails/009/292/244/small/default-avatar-icon-of-social-media-user-vector.jpg");
     const [loading, setLoading] = useState(false);
 
+    // 3. تهيئة البيانات بناءً على بيانات المستخدم المسجل حالياً
     const [formData, setFormData] = useState({
-        fullName: "مالك جابر",
-        workField: "Full Stack Developer",
-        githubUrl: "https://github.com/malik-jaber",
-        pastProjects: [
-            { title: "نظام إدارة المكتبات", link: "https://github.com/..." }
-        ]
+        fullName: user?.fullName || "",
+        workField: user?.workField || "",
+        githubUrl: user?.githubUrl || "",
+        pastProjects: user?.pastProjects || [{ title: "", link: "" }]
     });
 
     const handleImageChange = (e) => {
@@ -57,11 +61,21 @@ export const EditProfile = () => {
         });
         
         try {
+            // محاكاة لعملية الـ API
             await new Promise(resolve => setTimeout(resolve, 1000));
+
+            // 4. تحديث البيانات في الـ Context (هذا سيحدث الـ localStorage أيضاً)
+            const updatedUser = {
+                ...user,
+                ...formData,
+                image: imagePreview
+            };
+            login(updatedUser); 
+
             Swal.fire({
                 icon: 'success',
                 title: 'تم التحديث',
-                text: 'تم حفظ التعديلات بنجاح',
+                text: 'تم حفظ التعديلات بنجاح في ملفك الشخصي',
                 confirmButtonColor: mainGreen
             }).then(() => navigate('/profile'));
         } catch (err) {
@@ -95,7 +109,6 @@ export const EditProfile = () => {
                         <h4 className="fw-bold mb-4 text-center">تعديل بيانات الحساب</h4>
 
                         <form onSubmit={handleSave}>
-                            {/* 1. تعديل الصورة */}
                             <div className="avatar-wrapper mb-5 shadow-sm">
                                 <img src={imagePreview} className="avatar-img shadow-sm" alt="Profile" />
                                 <label htmlFor="img-input" className="upload-badge shadow">
@@ -105,28 +118,24 @@ export const EditProfile = () => {
                             </div>
 
                             <div className="row g-4">
-                                {/* 2. الاسم الكامل */}
                                 <div className="col-12">
                                     <label className="small fw-bold mb-2 text-secondary">الاسم الكامل</label>
                                     <input type="text" className="form-control fw-bold" value={formData.fullName} 
                                         onChange={(e) => setFormData({...formData, fullName: e.target.value})} required />
                                 </div>
 
-                                {/* 3. مجال العمل */}
                                 <div className="col-12">
                                     <label className="small fw-bold mb-2 text-secondary">مجال العمل / التخصص الدقيق</label>
                                     <input type="text" className="form-control" placeholder="مثلاً: Frontend Developer" 
                                         value={formData.workField} onChange={(e) => setFormData({...formData, workField: e.target.value})} />
                                 </div>
 
-                                {/* 4. رابط GitHub */}
                                 <div className="col-12">
                                     <label className="small fw-bold mb-2 text-secondary">رابط ملف GitHub</label>
                                     <input type="url" className="form-control text-start" dir="ltr" 
                                         value={formData.githubUrl} onChange={(e) => setFormData({...formData, githubUrl: e.target.value})} />
                                 </div>
 
-                                {/* 5. المشاريع السابقة */}
                                 <div className="col-12">
                                     <div className="d-flex justify-content-between align-items-center mb-3">
                                         <label className="small fw-bold text-secondary">المشاريع البرمجية</label>

@@ -1,14 +1,16 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import React, { useState, useEffect, useRef, useContext } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import zujLogo from '../assets/logo.png';
+import { AuthContext } from '../context/AuthContext';
 
 export const Chat = () => {
     const navigate = useNavigate();
     const scrollRef = useRef(null);
     const mainGreen = '#1a5d44';
 
-    const [isAuthorized, setIsAuthorized] = useState(false);
+    const { isLoggedIn } = useContext(AuthContext); 
+    
     const [view, setView] = useState('inbox');
     const [activeChat, setActiveChat] = useState(null);
     const [newMessage, setNewMessage] = useState("");
@@ -27,24 +29,21 @@ export const Chat = () => {
         { id: 3, name: "ديما علي", status: "نشط منذ 5 دقائق", avatar: "Dima", online: false, type: 'individual' }
     ]);
 
+    // 4. تعديل شرط الحماية (Protection)
+    useEffect(() => {
+        if (!isLoggedIn) {
+            navigate('/'); // تحويل المستخدم إذا لم يسجل الدخول
+        }
+    }, [isLoggedIn, navigate]);
+
     useEffect(() => {
         if (activeChat && activeChat.type === 'individual') {
             setLoading(true);
             setTimeout(() => {
-                console.log(`تم جلب بيانات المستخدم ${activeChat.name} من قاعدة البيانات`);
                 setLoading(false);
             }, 500);
         }
     }, [activeChat]);
-
-    useEffect(() => {
-        const user = localStorage.getItem('user');
-        if (!user) {
-            navigate('/');
-        } else {
-            setIsAuthorized(true);
-        }
-    }, [navigate]);
 
     useEffect(() => {
         if (scrollRef.current) {
@@ -101,7 +100,8 @@ export const Chat = () => {
         });
     };
 
-    if (!isAuthorized) return null;
+    // 5. منع عرض الصفحة تماماً إذا لم يكن مسجلاً
+    if (!isLoggedIn) return null;
 
     return (
         <div className="container py-4 text-end" dir="rtl" style={{ fontFamily: 'Cairo, sans-serif' }}>
@@ -196,9 +196,6 @@ export const Chat = () => {
                         </div>
                     </>
                 )}
-            </div>
-            <div className="text-center mt-2">
-                <small className="text-muted">انقر مزدوجاً على رسالتك لحذفها</small>
             </div>
         </div>
     );

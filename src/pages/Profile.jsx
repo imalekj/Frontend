@@ -1,34 +1,20 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
+import { useAuth } from '../context/AuthContext'; 
 
 export const Profile = () => {
     const navigate = useNavigate();
     const mainGreen = '#1a5d44';
-    const isLoggedIn = true;
+    
+    const { user, isLoggedIn, logout } = useAuth();
 
     useEffect(() => {
+    
         if (!isLoggedIn) {
             navigate('/login');
         }
     }, [isLoggedIn, navigate]);
-
-    const user = {
-        fullName: "مالك جابر",
-        userName: "malek_jaber",
-        email: "202110456@std.zuj.edu.jo",
-        role: "student",
-        universityMajor: "هندسة البرمجيات",
-        workField: "Full Stack Developer",
-        githubUrl: "https://github.com/malek-jaber",
-        avatar: "https://static.vecteezy.com/system/resources/thumbnails/009/292/244/small/default-avatar-icon-of-social-media-user-vector.jpg",
-        skills: ["React.js", "Node.js", "Tailwind CSS", "MySQL", "JavaScript"],
-        pastProjects: [
-            { title: "نظام إدارة المكتبات", link: "https://github.com/..." },
-            { title: "تطبيق التوصيل الجامعي", link: "https://github.com/..." }
-        ],
-        stats: { competitions: 12, points: 1250 }
-    };
 
     const handleLogout = () => {
         Swal.fire({
@@ -43,29 +29,28 @@ export const Profile = () => {
             reverseButtons: true,
             customClass: { popup: 'rounded-5' }
         }).then((result) => {
-            if (result.isConfirmed) navigate('/login');
+            if (result.isConfirmed) {
+                logout(); // استدعاء دالة الخروج من السياق
+                navigate('/login');
+            }
         });
     };
 
-    if (!isLoggedIn) return null;
+    if (!isLoggedIn || !user) return null;
 
     return (
         <div className="container-fluid py-5 bg-light min-vh-100 text-end" dir="rtl" style={{ fontFamily: 'Cairo, sans-serif' }}>
             <style>
                 {`
                     .profile-container { max-width: 1100px; margin: 0 auto; }
-                    .main-card { border-radius: 20px; border: none; background: white; padding: 25px; overflow: hidden; }
+                    .main-card { border-radius: 20px; border: none; background: white; padding: 25px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
                     .header-gradient { 
                         background: linear-gradient(135deg, ${mainGreen} 0%, #2d8a67 100%);
                         margin: -25px -25px 80px -25px;
                         height: 160px;
                         position: relative;
                     }
-                    .avatar-wrapper {
-                        position: absolute;
-                        bottom: -60px;
-                        right: 30px;
-                    }
+                    .avatar-wrapper { position: absolute; bottom: -60px; right: 30px; }
                     .profile-img { 
                         width: 130px; height: 130px; border-radius: 25px; 
                         border: 6px solid white; background: white;
@@ -104,10 +89,11 @@ export const Profile = () => {
             <div className="profile-container">
                 <div className="row g-4">
                     <div className="col-lg-4">
-                        <div className="main-card shadow-sm mb-4">
+                        <div className="main-card mb-4">
                             <div className="header-gradient">
                                 <div className="avatar-wrapper">
-                                    <img src={user.avatar} className="profile-img shadow-sm" alt="User" />
+                                
+                                    <img src={user.avatar || 'default-avatar.png'} className="profile-img shadow-sm" alt="User" />
                                 </div>
                             </div>
                             
@@ -140,9 +126,9 @@ export const Profile = () => {
                                 </div>
 
                                 <div className="text-end">
-                                    <h6 className="fw-bold text-dark small mb-2">المهارات المضافة</h6>
+                                    <h6 className="fw-bold text-dark small mb-2">المهارات التقنية</h6>
                                     <div className="d-flex flex-wrap gap-2">
-                                        {user.skills.map(skill => (
+                                        {user.skills?.map(skill => (
                                             <span key={skill} className="skill-tag">{skill}</span>
                                         ))}
                                     </div>
@@ -160,24 +146,24 @@ export const Profile = () => {
                         <div className="row g-3 mb-4 text-center">
                             <div className="col-6">
                                 <div className="stat-box">
-                                    <h4 className="fw-bold mb-0" style={{ color: mainGreen }}>{user.stats.points}</h4>
+                                    <h4 className="fw-bold mb-0" style={{ color: mainGreen }}>{user.stats?.points || 0}</h4>
                                     <small className="text-muted fw-600">نقاط التفاعل</small>
                                 </div>
                             </div>
                             <div className="col-6">
                                 <div className="stat-box">
-                                    <h4 className="fw-bold mb-0 text-warning">{user.pastProjects.length}</h4>
+                                    <h4 className="fw-bold mb-0 text-warning">{user.pastProjects?.length || 0}</h4>
                                     <small className="text-muted fw-600">مشاريع منجزة</small>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="main-card shadow-sm mb-4">
+                        <div className="main-card mb-4">
                             <h6 className="fw-bold mb-4 d-flex align-items-center gap-2">
                                 <i className="bi bi-collection text-success"></i> المشاريع السابقة
                             </h6>
                             <div className="row g-3 text-end">
-                                {user.pastProjects.length > 0 ? (
+                                {user.pastProjects?.length > 0 ? (
                                     user.pastProjects.map((project, index) => (
                                         <div key={index} className="col-md-6">
                                             <a href={project.link} target="_blank" rel="noreferrer" className="work-item">

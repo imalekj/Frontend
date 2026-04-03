@@ -2,12 +2,14 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 
+import { useAuth } from '../context/AuthContext'; 
+
 export const Dashboard = () => {
     const navigate = useNavigate();
+    
+    const { isLoggedIn } = useAuth(); 
+    
     const mainGreen = '#1a5d44'; 
-
-
-    const isLoggedIn = true; 
 
     const upcoming = [
         { 
@@ -40,6 +42,7 @@ export const Dashboard = () => {
     ];
 
     const handleJoinClick = (id) => {
+        // التحقق الآن يعتمد على الـ Context
         if (!isLoggedIn) {
             Swal.fire({
                 title: '<span style="font-family: Cairo">خطوة واحدة تفصلك!</span>',
@@ -128,7 +131,6 @@ export const Dashboard = () => {
                         transition: 0.3s ease;
                         box-shadow: 0 4px 15px rgba(26,93,68,0.2) !important;
                     }
-                    /* Swalt Styling */
                     .swal2-popup { font-family: 'Cairo', sans-serif !important; border-radius: 20px !important; }
                 `}
             </style>
@@ -193,7 +195,7 @@ export const Dashboard = () => {
                                 <div className="mt-3 mt-md-0 d-flex gap-2">
                                     <button 
                                         className="btn btn-light btn-sm px-3 fw-bold border" 
-                                        onClick={() => navigate(`/competition-details/${comp.id}`)}
+                                        onClick={() => navigate(`/competition/${comp.id}`)}
                                     >
                                         التفاصيل
                                     </button>

@@ -24,7 +24,8 @@ export const CreatePost = () => {
         if (!user) {
             navigate('/login');
         } else {
-            setIsAuthorized(false);
+            // تصحيح: يجب أن تكون true ليتم عرض المحتوى
+            setIsAuthorized(true);
         }
     }, [navigate]);
 
@@ -34,11 +35,27 @@ export const CreatePost = () => {
         { id: 'hack', label: 'هاكاثون', icon: 'code-slash' }
     ];
 
+    // دالة موحدة لتحديث الحالة (توفيراً للكود)
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
+    };
 
     const handleSubmit = (e) => {
         e.preventDefault();
         
-    
+        // مثال بسيط للتحقق من التاريخ
+        const selectedDate = new Date(formData.deadline);
+        const today = new Date();
+        if (selectedDate < today) {
+            return Swal.fire({
+                icon: 'error',
+                title: 'التاريخ غير منطقي',
+                text: 'يرجى اختيار تاريخ موعد نهائي في المستقبل.',
+                confirmButtonColor: mainGreen,
+            });
+        }
+
         Swal.fire({
             title: 'جاري النشر...',
             allowOutsideClick: false,
@@ -47,7 +64,8 @@ export const CreatePost = () => {
             },
             timer: 1500
         }).then(() => {
-            console.log("Post Data:", formData);
+            // هنا سيتم استدعاء axios.post مستقبلاً لإرسال formData لـ Node.js
+            console.log("Post Data Prepared for DB:", formData);
             
             Swal.fire({
                 icon: 'success',
@@ -134,36 +152,33 @@ export const CreatePost = () => {
                         <div className="row g-2">
                             <div className="col-12">
                                 <label className="form-label">العنوان الرئيسي</label>
-                                <input type="text" className="form-control compact-input" placeholder="مثلاً: مسابقة البرمجة السنوية" 
-                                    required
-                                    value={formData.title}
-                                    onChange={(e) => setFormData({...formData, title: e.target.value})} />
+                                <input name="title" type="text" className="form-control compact-input" placeholder="مثلاً: مسابقة البرمجة السنوية" 
+                                    required value={formData.title} onChange={handleChange} />
                             </div>
 
                             <div className="col-md-6">
                                 <label className="form-label text-danger">الموعد النهائي</label>
-                                <input type="date" className="form-control compact-input" 
-                                    required
-                                    onChange={(e) => setFormData({...formData, deadline: e.target.value})} />
+                                <input name="deadline" type="date" className="form-control compact-input" 
+                                    required value={formData.deadline} onChange={handleChange} />
                             </div>
                             <div className="col-md-6">
                                 <label className="form-label">الجائزة / المحفز (إن وجد)</label>
-                                <input type="text" className="form-control compact-input" placeholder="مكافأة، شهادة، مبلغ.."
-                                    onChange={(e) => setFormData({...formData, prize: e.target.value})} />
+                                <input name="prize" type="text" className="form-control compact-input" placeholder="مكافأة، شهادة، مبلغ.."
+                                    value={formData.prize} onChange={handleChange} />
                             </div>
 
                             <div className="col-md-6">
                                 <label className="form-label">طريقة المشاركة</label>
-                                <select className="form-select compact-input" 
-                                    onChange={(e) => setFormData({...formData, participationType: e.target.value})}>
+                                <select name="participationType" className="form-select compact-input" 
+                                    value={formData.participationType} onChange={handleChange}>
                                     <option value="فردي">فردي فقط</option>
                                     <option value="فريق">فريق عمل</option>
                                 </select>
                             </div>
                             <div className="col-md-6">
                                 <label className="form-label">مكان المسابقة / العمل</label>
-                                <select className="form-select compact-input" 
-                                    onChange={(e) => setFormData({...formData, location: e.target.value})}>
+                                <select name="location" className="form-select compact-input" 
+                                    value={formData.location} onChange={handleChange}>
                                     <option value="أونلاين">أونلاين</option>
                                     <option value="داخل الحرم الجامعي">داخل الحرم الجامعي</option>
                                     <option value="مختبر الحاسوب">مختبر الحاسوب</option>
@@ -173,23 +188,21 @@ export const CreatePost = () => {
                             {formData.participationType === 'فريق' && (
                                 <div className="col-12 animate__animated animate__fadeIn">
                                     <label className="form-label">الحد الأقصى لأعضاء الفريق</label>
-                                    <input type="number" min="2" className="form-control compact-input" placeholder="عدد الأشخاص المسموح بهم"
-                                        onChange={(e) => setFormData({...formData, maxMembers: e.target.value})} />
+                                    <input name="maxMembers" type="number" min="2" className="form-control compact-input" 
+                                        value={formData.maxMembers} onChange={handleChange} />
                                 </div>
                             )}
 
                             <div className="col-12">
                                 <label className="form-label">وصف الإعلان</label>
-                                <textarea className="form-control compact-input" rows="2" placeholder="اكتب نبذة مختصرة..."
-                                    required
-                                    value={formData.content}
-                                    onChange={(e) => setFormData({...formData, content: e.target.value})}></textarea>
+                                <textarea name="content" className="form-control compact-input" rows="2" placeholder="اكتب نبذة مختصرة..."
+                                    required value={formData.content} onChange={handleChange}></textarea>
                             </div>
 
                             <div className="col-12">
                                 <label className="form-label">الشروط والمهارات المطلوبة</label>
-                                <textarea className="form-control compact-input border-success-subtle" rows="2" placeholder="مهارات محددة، معدل معين، إلخ..."
-                                    onChange={(e) => setFormData({...formData, skills: e.target.value})}></textarea>
+                                <textarea name="skills" className="form-control compact-input border-success-subtle" rows="2" placeholder="مهارات محددة، معدل معين، إلخ..."
+                                    value={formData.skills} onChange={handleChange}></textarea>
                             </div>
                         </div>
 

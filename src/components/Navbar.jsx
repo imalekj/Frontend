@@ -1,11 +1,16 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { NavLink, Link, useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import zujLogo from '../assets/logo.png';
+import { useAuth } from '../context/AuthContext';
 
 export const Navbar = () => {
-    const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem('token'));
-    const [userData, setUserData] = useState(JSON.parse(localStorage.getItem('user')) || {});
+    
+    const { user, token, logout } = useAuth();
+    
+    
+    const isLoggedIn = !!token;
+    
     const [notifCount] = useState(3);
     const [showUserDropdown, setShowUserDropdown] = useState(false);
     const [showNotifDropdown, setShowNotifDropdown] = useState(false);
@@ -15,15 +20,6 @@ export const Navbar = () => {
     const userRef = useRef(null);
     const notifRef = useRef(null);
 
-    useEffect(() => {
-        const handleStorageChange = () => {
-            setIsLoggedIn(!!localStorage.getItem('token'));
-            setUserData(JSON.parse(localStorage.getItem('user')) || {});
-        };
-
-        window.addEventListener('storage', handleStorageChange);
-        return () => window.removeEventListener('storage', handleStorageChange);
-    }, []);
 
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -50,10 +46,8 @@ export const Navbar = () => {
             customClass: { popup: 'rounded-4 shadow-lg', title: 'fw-bold' }
         }).then((result) => {
             if (result.isConfirmed) {
-                localStorage.removeItem('token');
-                localStorage.removeItem('user');
-                setIsLoggedIn(false);
-                setUserData({});
+                // 3. استدعاء دالة logout من السياق
+                logout(); 
                 
                 Swal.fire({
                     title: 'تم!',
@@ -155,11 +149,11 @@ export const Navbar = () => {
                             <div className="position-relative ms-1" ref={userRef}>
                                 <button className="btn border-0 p-1 d-flex align-items-center gap-2 shadow-none" onClick={() => setShowUserDropdown(!showUserDropdown)}>
                                     <div className="text-end d-none d-xl-block">
-                                        <div className="fw-bold text-dark lh-1" style={{ fontSize: '0.85rem' }}>{userData.fullName || "مالك جابر"}</div>
-                                        <small className="text-muted" style={{ fontSize: '0.7rem' }}>{userData.universityMajor || "طالب تقنية معلومات"}</small>
+                                        <div className="fw-bold text-dark lh-1" style={{ fontSize: '0.85rem' }}>{user?.fullName || "مستخدم"}</div>
+                                        <small className="text-muted" style={{ fontSize: '0.7rem' }}>{user?.universityMajor || "طالب تقنية معلومات"}</small>
                                     </div>
                                     <img 
-                                        src={userData.profilePic || "https://static.vecteezy.com/system/resources/thumbnails/009/292/244/small/default-avatar-icon-of-social-media-user-vector.jpg"} 
+                                        src={user?.profilePic || "https://static.vecteezy.com/system/resources/thumbnails/009/292/244/small/default-avatar-icon-of-social-media-user-vector.jpg"} 
                                         className="rounded-circle border shadow-sm" 
                                         width="38" height="38" 
                                         style={{objectFit: 'cover'}} 
@@ -168,7 +162,7 @@ export const Navbar = () => {
                                 </button>
                                 {showUserDropdown && (
                                     <div className="custom-dropdown text-end">
-                                        <Link className="dropdown-item" to="/profile" onClick={() => setShowUserDropdown(false)}>
+                                        <Link className="dropdown-item" to={`/profile/${user?.id}`} onClick={() => setShowUserDropdown(false)}>
                                             <i className="bi bi-person-circle fs-6"></i> ملفي الشخصي
                                         </Link>
                                         <Link className="dropdown-item" to="/edit-profile" onClick={() => setShowUserDropdown(false)}>

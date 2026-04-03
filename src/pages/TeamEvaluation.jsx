@@ -1,27 +1,38 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast, { Toaster } from 'react-hot-toast';
 import Swal from 'sweetalert2';
+import { useAuth } from '../context/AuthContext';
 
 export const TeamEvaluation = () => {
     const navigate = useNavigate();
+    const { user } = useAuth(); 
     const mainGreen = '#1a5d44';
 
     const [members, setMembers] = useState([
-        { id: 1, name: "خالد منصور", role: "Frontend Developer", rating: 0, feedback: "" },
-        { id: 2, name: "سارة خالد", role: "UI/UX Designer", rating: 0, feedback: "" }
+        { id: 101, name: "أحمد علي", role: "Team Leader", rating: 0, feedback: "" },
+        { id: 102, name: "سارة خالد", role: "UI/UX Designer", rating: 0, feedback: "" },
+        { id: 103, name: "خالد منصور", role: "Frontend Developer", rating: 0, feedback: "" },
+        { id: 104, name: "ليلى حسن", role: "Backend Developer", rating: 0, feedback: "" },
     ]);
 
-    const getDefaultAvatar = (seed) => `https://static.vecteezy.com/system/resources/thumbnails/009/292/244/small/default-avatar-icon-of-social-media-user-vector.jpg`;
+
+    const evaluationList = members.filter(m => m.id !== user?.id);
+
+    const getDefaultAvatar = (seed) => `https://api.dicebear.com/7.x/identicon/svg?seed=${seed}`;
 
     const handleRating = (memberId, stars) => {
         setMembers(members.map(m => m.id === memberId ? { ...m, rating: stars } : m));
     };
 
-    const completedCount = members.filter(m => m.rating > 0).length;
+    const handleFeedbackChange = (memberId, text) => {
+        setMembers(members.map(m => m.id === memberId ? { ...m, feedback: text } : m));
+    };
+
+    const completedCount = evaluationList.filter(m => m.rating > 0).length;
 
     const handleSubmit = async () => {
-        if (completedCount < members.length) {
+        if (completedCount < evaluationList.length) {
             toast.error('يرجى إكمال تقييم جميع الأعضاء أولاً', {
                 style: {
                     borderRadius: '15px',
@@ -33,7 +44,7 @@ export const TeamEvaluation = () => {
 
         const result = await Swal.fire({
             title: 'إرسال التقييمات؟',
-            text: "لن تتمكن من تعديل التقييم بعد الإرسال.",
+            text: "سيتم تسجيل هذه التقييمات باسمك ولن تتمكن من تعديلها لاحقاً.",
             icon: 'question',
             showCancelButton: true,
             confirmButtonColor: mainGreen,
@@ -53,10 +64,11 @@ export const TeamEvaluation = () => {
                 didOpen: () => { Swal.showLoading(); }
             });
 
+            // محاكاة عملية الحفظ في قاعدة البيانات
             setTimeout(() => {
                 Swal.fire({
                     title: 'تم الإرسال بنجاح! 🚀',
-                    text: 'شكراً لك! تقييمك يساعد في بناء مجتمع تقني أفضل.',
+                    text: `شكراً لك ${user?.name || ''}! تقييمك يساعد في تطوير الفريق.`,
                     icon: 'success',
                     confirmButtonColor: mainGreen,
                     customClass: { popup: 'rounded-5' }
@@ -97,10 +109,10 @@ export const TeamEvaluation = () => {
 
             <div className="text-center mb-5 animate__animated animate__fadeInDown">
                 <h2 className="fw-bold mb-2">تقييم <span style={{color: mainGreen}}>أداء الفريق</span></h2>
-                <p className="text-muted small">رأيك الصادق يساهم في تحسين جودة مجتمعنا التقني</p>
+                <p className="text-muted small">مرحباً {user?.name}، رأيك الصادق يساهم في تحسين جودة مجتمعنا التقني</p>
             </div>
 
-            {members.map((member, index) => (
+            {evaluationList.map((member, index) => (
                 <div key={member.id} className="card border-0 shadow-sm p-4 mb-4 member-card animate__animated animate__fadeInUp" style={{ animationDelay: `${index * 0.1}s` }}>
                     <div className="d-flex align-items-center gap-3 mb-3">
                         <img 
@@ -128,9 +140,9 @@ export const TeamEvaluation = () => {
                         className="form-control border-0 bg-light p-3" 
                         style={{ borderRadius: '15px', fontSize: '0.9rem' }}
                         rows="2" 
-                        placeholder="أضف ملاحظة حول أدائه (اختياري)..."
+                        placeholder={`ما هو رأيك في مساهمة ${member.name.split(' ')[0]}؟ (اختياري)...`}
                         value={member.feedback}
-                        onChange={(e) => setMembers(members.map(m => m.id === member.id ? { ...m, feedback: e.target.value } : m))}
+                        onChange={(e) => handleFeedbackChange(member.id, e.target.value)}
                     ></textarea>
                 </div>
             ))}
@@ -146,7 +158,7 @@ export const TeamEvaluation = () => {
                 }}
                 onClick={handleSubmit}
             >
-                إرسال كافة التقييمات ({completedCount}/{members.length})
+                إرسال كافة التقييمات ({completedCount}/{evaluationList.length})
             </button>
         </div>
     );

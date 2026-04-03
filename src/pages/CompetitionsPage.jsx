@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { AuthContext } from '../context/AuthContext';
 
 export const CompetitionsPage = () => {
     const [mainTab, setMainTab] = useState('الكل'); 
@@ -7,6 +8,8 @@ export const CompetitionsPage = () => {
     const [searchTerm, setSearchTerm] = useState('');
     
     const navigate = useNavigate();
+    const { isLoggedIn } = useContext(AuthContext);
+    
     const mainGreen = '#1a5d44';
     const accentGold = '#c5a059';
 
@@ -59,6 +62,16 @@ export const CompetitionsPage = () => {
         const matchesSearch = item.title.toLowerCase().includes(searchTerm.toLowerCase());
         return matchesTab && matchesCategory && matchesSearch;
     });
+
+    // دالة التعامل مع النشر
+    const handleCreatePost = () => {
+        if (isLoggedIn) {
+            navigate('/create-post');
+        } else {
+            // توجيهه لتسجيل الدخول إذا لم يكن مسجلاً
+            navigate('/login');
+        }
+    };
 
     return (
         <div className="container py-5 text-end bg-white" dir="rtl" style={{ fontFamily: 'Cairo, sans-serif' }}>
@@ -154,10 +167,10 @@ export const CompetitionsPage = () => {
                     
                     <button 
                         className="btn btn-create shadow-sm ms-3 d-flex align-items-center gap-2"
-                        onClick={() => navigate('/create-post')}
+                        onClick={handleCreatePost}
                     >
                         <i className="bi bi-plus-circle-fill fs-5"></i>
-                        <span>نشر</span>
+                        <span>نشر فرصة</span>
                     </button>
                 </div>
                 
@@ -175,7 +188,6 @@ export const CompetitionsPage = () => {
                 </div>
             </div>
 
-        
             <div className="row mb-5 gy-4 align-items-center">
                 <div className="col-lg-6 text-center text-lg-end">
                     <div className="tab-switcher shadow-sm">
@@ -207,7 +219,6 @@ export const CompetitionsPage = () => {
                 </div>
             </div>
 
-        
             <div className="row g-4">
                 {filteredResults.length > 0 ? filteredResults.map(item => (
                     <div key={item.id} className="col-xl-3 col-lg-4 col-md-6">

@@ -1,21 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import toast, { Toaster } from 'react-hot-toast';
+import { useAuth } from '../context/AuthContext'; 
 
 export const TodoListPage = () => {
     const { teamId } = useParams(); 
     const navigate = useNavigate();
+    const { user } = useAuth(); 
     const mainGreen = '#1a5d44';
     
     const [tasks, setTasks] = useState([]);
     const [newTask, setNewTask] = useState('');
     const [loading, setLoading] = useState(false);
 
+    const isOwner = user?.role === 'admin' || user?.id === 101; 
 
     const fetchTeamTasks = async () => {
         setLoading(true);
         try {
-            
             setTimeout(() => {
                 const mockTasks = [
                     { id: 1, text: 'تحليل المتطلبات النهائية للمشروع', completed: true },
@@ -38,6 +40,10 @@ export const TodoListPage = () => {
 
     const addTask = (e) => {
         e.preventDefault();
+        if (!isOwner) {
+            toast.error('عذراً، قائد الفريق فقط يمكنه إضافة مهام');
+            return;
+        }
         if (!newTask.trim()) return;
         
         const task = { 
@@ -58,6 +64,10 @@ export const TodoListPage = () => {
     };
 
     const deleteTask = (id) => {
+        if (!isOwner) {
+            toast.error('لا تملك صلاحية حذف المهام');
+            return;
+        }
         setTasks(tasks.filter(task => task.id !== id));
         toast.error('تم حذف المهمة');
     };
@@ -86,7 +96,6 @@ export const TodoListPage = () => {
             </style>
 
             <div className="container">
-            
                 <div className="row justify-content-center mb-5">
                     <div className="col-lg-8 d-flex justify-content-between align-items-center flex-wrap gap-3">
                         <div>
@@ -94,7 +103,7 @@ export const TodoListPage = () => {
                                 <i className="bi bi-arrow-right me-1"></i> العودة
                             </button>
                             <h2 className="fw-bold mb-1" style={{ color: mainGreen }}>قائمة مهام الفريق</h2>
-                            <p className="text-muted mb-0 small">متابعة إنجازات فريق جامعة الزيتونة</p>
+                            <p className="text-muted mb-0 small">مرحباً {user?.name}، تابع إنجازات فريقك</p>
                         </div>
                         <button className="btn-refresh shadow-sm" onClick={fetchTeamTasks} disabled={loading}>
                             {loading ? <span className="spinner-border spinner-border-sm me-2"></span> : <i className="bi bi-arrow-repeat me-2"></i>}
@@ -105,25 +114,24 @@ export const TodoListPage = () => {
 
                 <div className="row justify-content-center">
                     <div className="col-lg-8">
-                    
-                        <div className="card todo-card shadow-sm p-4 mb-4">
-                            <form onSubmit={addTask}>
-                                <div className="input-group shadow-sm" style={{ borderRadius: '12px', overflow: 'hidden' }}>
-                                    <input 
-                                        type="text" 
-                                        className="form-control input-task bg-light text-end" 
-                                        placeholder="ما هي المهمة الجديدة؟"
-                                        value={newTask}
-                                        onChange={(e) => setNewTask(e.target.value)}
-                                    />
-                                    <button type="submit" className="btn-add">
-                                        إضافة
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
+                        {/* لا يظهر نموذج الإضافة إلا للقائد */}
+                        {isOwner && (
+                            <div className="card todo-card shadow-sm p-4 mb-4 animate__animated animate__fadeIn">
+                                <form onSubmit={addTask}>
+                                    <div className="input-group shadow-sm" style={{ borderRadius: '12px', overflow: 'hidden' }}>
+                                        <input 
+                                            type="text" 
+                                            className="form-control input-task bg-light text-end" 
+                                            placeholder="أضف مهمة جديدة للفريق..."
+                                            value={newTask}
+                                            onChange={(e) => setNewTask(e.target.value)}
+                                        />
+                                        <button type="submit" className="btn-add">إضافة</button>
+                                    </div>
+                                </form>
+                            </div>
+                        )}
 
-                    
                         <div className="todo-content">
                             {loading ? (
                                 <div className="text-center py-5 shadow-sm bg-white rounded-4">
@@ -133,7 +141,7 @@ export const TodoListPage = () => {
                             ) : tasks.length === 0 ? (
                                 <div className="text-center py-5 shadow-sm bg-white rounded-4 border-2 border-dashed">
                                     <i className="bi bi-journal-x fs-1 text-muted"></i>
-                                    <p className="text-muted mt-2">لا توجد مهام حالية. ابدأ بإضافة مهام لفريقك!</p>
+                                    <p className="text-muted mt-2">لا توجد مهام حالية.</p>
                                 </div>
                             ) : (
                                 <div className="tasks-container">
@@ -151,19 +159,21 @@ export const TodoListPage = () => {
                                                     {task.text}
                                                 </span>
                                             </div>
-                                            <button 
-                                                onClick={() => deleteTask(task.id)} 
-                                                className="btn btn-outline-danger border-0 rounded-circle"
-                                            >
-                                                <i className="bi bi-trash3"></i>
-                                            </button>
+                                            {/* أيقونة الحذف تظهر فقط للقائد */}
+                                            {isOwner && (
+                                                <button 
+                                                    onClick={() => deleteTask(task.id)} 
+                                                    className="btn btn-outline-danger border-0 rounded-circle"
+                                                >
+                                                    <i className="bi bi-trash3"></i>
+                                                </button>
+                                            )}
                                         </div>
                                     ))}
                                 </div>
                             )}
                         </div>
 
-                    
                         {!loading && tasks.length > 0 && (
                             <div className="card border-0 bg-white p-4 shadow-sm rounded-4 mt-4">
                                 <div className="d-flex justify-content-between align-items-center mb-2">
@@ -181,10 +191,6 @@ export const TodoListPage = () => {
                                             backgroundColor: mainGreen 
                                         }}
                                     ></div>
-                                </div>
-                                <div className="mt-3 d-flex justify-content-between small text-muted">
-                                    <span>المهام المنجزة: {tasks.filter(t => t.completed).length}</span>
-                                    <span>المتبقي: {tasks.filter(t => !t.completed).length}</span>
                                 </div>
                             </div>
                         )}

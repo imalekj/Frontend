@@ -2,9 +2,11 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast, { Toaster } from 'react-hot-toast';
 import Swal from 'sweetalert2';
+import { useAuth } from '../context/AuthContext'; 
 
 export const SetupProfile = () => {
     const navigate = useNavigate();
+    const { login } = useAuth(); 
     const mainGreen = '#1a5d44'; 
 
     const [step, setStep] = useState(1);
@@ -108,7 +110,6 @@ export const SetupProfile = () => {
     const handleFinalStep = (e) => {
         e.preventDefault();
         setLoading(true);
-        // محاكاة إرسال كود التحقق
         setTimeout(() => {
             setLoading(false);
             setStep(3);
@@ -121,11 +122,26 @@ export const SetupProfile = () => {
         if (verificationCode.length < 4) return toast.error("يرجى إدخال كود التحقق الصحيح");
         
         setLoading(true);
+        
+        // محاكاة عملية إنشاء الحساب والتحقق من الكود
         setTimeout(() => {
+            // البيانات التي سيتم تخزينها في الـ Context (تعدل حسب استجابة الـ Backend لديك)
+            const userData = {
+                userName: formData.userName,
+                fullName: formData.fullName,
+                email: formData.email,
+                role: formData.role,
+                major: formData.universityMajor
+            };
+            const token = "mock_token_123"; // توكن افتراضي من السيرفر
+
+            // تسجيل الدخول تلقائياً
+            login(userData, token); 
+
             setLoading(false);
             Swal.fire({
                 title: 'تم بنجاح',
-                text: 'تم تفعيل الحساب وإعداد الملف الشخصي',
+                text: 'تم تفعيل الحساب وإعداد الملف الشخصي، مرحباً بك!',
                 icon: 'success',
                 confirmButtonColor: mainGreen
             }).then(() => navigate('/profile'));
@@ -310,7 +326,9 @@ export const SetupProfile = () => {
 
                                     <div className="d-flex gap-3">
                                         <button type="button" onClick={prevStep} className="btn btn-outline-secondary flex-grow-1 py-3 rounded-4">السابق</button>
-                                        <button type="button" onClick={verifyAndSubmit} disabled={loading} className="btn btn-success flex-grow-1 py-3 rounded-4 fw-bold" style={{ background: mainGreen }}>تأكيد وإنهاء</button>
+                                        <button type="button" onClick={verifyAndSubmit} disabled={loading} className="btn btn-success flex-grow-1 py-3 rounded-4 fw-bold" style={{ background: mainGreen }}>
+                                            {loading ? <span className="spinner-border spinner-border-sm"></span> : 'تأكيد وإنهاء'}
+                                        </button>
                                     </div>
                                     <button type="button" className="btn btn-link text-success mt-3 text-decoration-none">إعادة إرسال الكود</button>
                                 </div>

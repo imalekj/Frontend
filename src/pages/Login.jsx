@@ -3,81 +3,81 @@ import { useNavigate, Link } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import zujLogo from '../assets/logo.png';
 
+import { useAuth } from '../context/AuthContext'; 
 
 export const Login = () => {
-
-
     const navigate = useNavigate();
+    const { login } = useAuth(); 
+    
     const mainGreen = '#1a5d44';
 
     const [credentials, setCredentials] = useState({ identifier: '', password: '' });
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
 
-
-    const swalStyled = Swal.mixin({
-        customClass: {
-            popup: 'rounded-5 shadow-lg',
-            confirmButton: 'btn btn-success px-5 py-2 fw-bold'
-        },
-        buttonsStyling: false,
-        fontFamily: 'Cairo'
-    });
-
     const handleChange = (e) => {
         setCredentials({ ...credentials, [e.target.name]: e.target.value });
     };
 
     const handleLogin = async (e) => {
-    e.preventDefault();
-    setIsLoading(true);
+        e.preventDefault();
+        setIsLoading(true);
 
-    try {
-        const response = await fetch("https://localhost:7011/api/Login/login", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                identifier: credentials.identifier,
-                password: credentials.password
-            })
-        });
+        try {
+            const response = await fetch("https://localhost:7011/api/Login/login", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    identifier: credentials.identifier,
+                    password: credentials.password
+                })
+            });
 
-        const data = await response.json();
+            const data = await response.json();
 
-        if (response.ok) {
+            if (response.ok) {
+                
+                login({
+                    token: data.token,
+                    fullName: data.fullName || "مالك جابر",
+                    identifier: credentials.identifier,
+                    ...data.user 
+                });
 
-
-            localStorage.setItem("token", data.token);
-        Swal.fire({
-            title: 'أهلاً بك مجدداً!',
-            text: data.message,
-            icon: 'success',
-            timer: 2000,
-            showConfirmButton: false,
-            timerProgressBar: true
-    }).then(() => {
-        navigate('/');
-    });
-        } else {
+                Swal.fire({
+                    title: 'أهلاً بك مجدداً!',
+                    text: 'تم تسجيل الدخول بنجاح',
+                    icon: 'success',
+                    timer: 2000,
+                    showConfirmButton: false,
+                    timerProgressBar: true,
+                    confirmButtonColor: mainGreen
+                }).then(() => {
+                    navigate('/');
+                });
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'خطأ في الدخول',
+                    text: data.message || 'البيانات المدخلة غير صحيحة',
+                    confirmButtonColor: mainGreen
+                });
+            }
+        } catch (err) {
+            console.error(err);
             Swal.fire({
                 icon: 'error',
-                title: 'خطأ في الدخول',
-                text: data.message
+                title: 'حدث خطأ',
+                text: 'فشل الاتصال بالخادم، يرجى المحاولة لاحقاً',
+                confirmButtonColor: mainGreen
             });
+        } finally {
+            setIsLoading(false);
         }
-    } catch (err) {
-        console.error(err);
-        Swal.fire({
-            icon: 'error',
-            title: 'حدث خطأ',
-            text: 'يرجى المحاولة لاحقاً'
-        });
-    } finally {
-        setIsLoading(false);
-    }
-};
+    };
+
     return (
         <div className="container" style={{ fontFamily: 'Cairo, sans-serif' }}>
             <style>
@@ -125,7 +125,7 @@ export const Login = () => {
                         </div>
 
                         <h3 className="fw-900 mb-1" style={{ color: mainGreen }}>مرحباً بك مجدداً</h3>
-                        <p className="text-muted small fw-bold mb-4">سجل دخولك للوصول إلى فرقك الدراسية</p>
+                        <p className="text-muted small fw-bold mb-4">سجل دخولك للوصول إلى فريقك الدراسي</p>
 
                         <form onSubmit={handleLogin} className="text-end">
                             <div className="mb-3">
@@ -198,9 +198,5 @@ export const Login = () => {
                 </div>
             </div>
         </div>
-
-        
     );
-
-    
 };

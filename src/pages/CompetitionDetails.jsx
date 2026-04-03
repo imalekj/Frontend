@@ -1,13 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react'; // 1. إضافة useContext
 import { useParams, useNavigate } from 'react-router-dom';
+import { AuthContext } from '../context/AuthContext'; 
 
 export const CompetitionDetails = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const mainGreen = '#1a5d44';
 
+    const { isLoggedIn } = useContext(AuthContext); 
+
     const user = localStorage.getItem('user');
-    const isLoggedIn = !!user; 
     const userData = user ? JSON.parse(user) : null;
 
     const [commentText, setCommentText] = useState("");
@@ -71,8 +73,6 @@ export const CompetitionDetails = () => {
                     .skill-badge { background: #f1f7f5; color: ${mainGreen}; padding: 5px 12px; border-radius: 8px; font-size: 0.8rem; font-weight: 700; }
                     .btn-action { background: ${mainGreen}; color: white; border: none; padding: 14px; border-radius: 10px; font-weight: 700; width: 100%; transition: 0.3s; }
                     .btn-action:hover { opacity: 0.9; transform: translateY(-2px); }
-                    
-                    /* تنسيق التعليقات */
                     .comment-box { background: #f8faf9; border-radius: 12px; padding: 15px; margin-bottom: 15px; border-right: 4px solid ${mainGreen}; }
                     .comment-input { border-radius: 10px; border: 1px solid #e0e0e0; padding: 12px; font-size: 0.9rem; }
                     .comment-input:focus { border-color: ${mainGreen}; box-shadow: 0 0 0 0.2rem rgba(26, 93, 68, 0.1); }
@@ -85,7 +85,7 @@ export const CompetitionDetails = () => {
                 <div className="col-lg-8">
                     <div className="mb-4">
                         <span className="badge bg-light text-success border mb-2 px-3 py-2">مسابقة برمجية</span>
-                        <h2 className="fw-900 mb-3" style={{ color: '#1a2a23' }}>{competition.title}</h2>
+                        <h2 className="fw-900 mb-3" style={{ color: '#1a223' }}>{competition.title}</h2>
                         
                         <div className="publisher-mini mb-4" onClick={handleProfileClick}>
                             <img src={competition.publisher.avatar} width="45" height="45" className="rounded-circle border" alt="Publisher" />
@@ -99,7 +99,6 @@ export const CompetitionDetails = () => {
                     <h6 className="fw-bold mb-3"><i className="bi bi-info-circle me-1"></i> وصف المسابقة</h6>
                     <p className="text-muted small lh-lg mb-5">{competition.description}</p>
 
-                
                     <div className="row mb-5">
                         <div className="col-md-6">
                             <h6 className="fw-bold mb-3">المتطلبات الأساسية</h6>
@@ -121,6 +120,7 @@ export const CompetitionDetails = () => {
 
                     <hr />
 
+                    {/* قسم التعليقات المعتمد على isLoggedIn من Context */}
                     <div className="mt-5">
                         <h5 className="fw-bold mb-4"><i className="bi bi-chat-left-text ms-2"></i>التعليقات ({comments.length})</h5>
                         
@@ -161,7 +161,6 @@ export const CompetitionDetails = () => {
                         </div>
                     </div>
                 </div>
-
 
                 <div className="col-lg-4">
                     <div className="info-card shadow-sm sticky-top" style={{ top: '20px' }}>

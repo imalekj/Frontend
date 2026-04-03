@@ -1,23 +1,31 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext'; 
 
 export const UserProfile = () => {
     const { userId } = useParams();
     const navigate = useNavigate();
+    const { user: currentUser } = useAuth();
     const mainGreen = '#1a5d44';
 
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
 
+    
+    const isOwnProfile = currentUser?.id === parseInt(userId) || currentUser?.id === userId;
+
     useEffect(() => {
         const fetchUserData = async () => {
             try {
                 setLoading(true);
+                
+    
+                
                 setTimeout(() => {
                     const mockData = {
                         id: userId,
-                        name: "أحمد علي",
-                        role: "هندسة برمجيات - سنة ثالثة",
+                        name: isOwnProfile ? currentUser?.name : "أحمد علي",
+                        role: isOwnProfile ? "طالب تقنية معلومات - الزيتونة" : "هندسة برمجيات - سنة ثالثة",
                         githubUrl: "https://github.com",
                         bio: "مطور واجهات طموح أهوى المشاركة في الهاكاثونات البرمجية. أؤمن بأن العمل الجماعي هو مفتاح الابتكار التقني.",
                         rating: 4.8,
@@ -40,7 +48,7 @@ export const UserProfile = () => {
             }
         };
         fetchUserData();
-    }, [userId]);
+    }, [userId, currentUser, isOwnProfile]);
 
     if (loading) return (
         <div className="d-flex justify-content-center align-items-center min-vh-100">
@@ -107,7 +115,7 @@ export const UserProfile = () => {
                             <div className="header-gradient">
                                 <div className="avatar-wrapper">
                                     <img 
-                                        src="https://static.vecteezy.com/system/resources/thumbnails/009/292/244/small/default-avatar-icon-of-social-media-user-vector.jpg" 
+                                        src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user.name}`} 
                                         className="profile-img shadow-sm" 
                                         alt="User" 
                                     />
@@ -115,7 +123,9 @@ export const UserProfile = () => {
                             </div>
                             
                             <div className="info-section">
-                                <h4 className="fw-bold text-dark mb-1">{user.name}</h4>
+                                <h4 className="fw-bold text-dark mb-1">
+                                    {user.name} {isOwnProfile && <span className="badge bg-secondary-subtle text-secondary fs-6 ms-2">أنت</span>}
+                                </h4>
                                 <p className="text-muted small mb-3">{user.role}</p>
                                 
                                 <div className="rating-badge mb-4">
@@ -123,13 +133,23 @@ export const UserProfile = () => {
                                 </div>
 
                                 <div className="d-flex gap-2 mb-4">
-                                    <button 
-                                        className="btn text-white rounded-pill px-4 fw-bold flex-grow-1 shadow-sm"
-                                        style={{ backgroundColor: mainGreen }}
-                                        onClick={() => navigate(`/chat/${user.id}`)}
-                                    >
-                                        <i className="bi bi-chat-dots-fill me-2"></i> مراسلة
-                                    </button>
+                                    {/* إظهار زر تعديل للمالك، أو زر مراسلة للآخرين */}
+                                    {isOwnProfile ? (
+                                        <button 
+                                            className="btn btn-outline-dark rounded-pill px-4 fw-bold flex-grow-1 shadow-sm"
+                                            onClick={() => navigate('/settings')}
+                                        >
+                                            <i className="bi bi-pencil-square me-2"></i> تعديل الملف
+                                        </button>
+                                    ) : (
+                                        <button 
+                                            className="btn text-white rounded-pill px-4 fw-bold flex-grow-1 shadow-sm"
+                                            style={{ backgroundColor: mainGreen }}
+                                            onClick={() => navigate(`/chat/${user.id}`)}
+                                        >
+                                            <i className="bi bi-chat-dots-fill me-2"></i> مراسلة
+                                        </button>
+                                    )}
                                     
                                     <a href={user.githubUrl} target="_blank" rel="noopener noreferrer" className="btn-github">
                                         <i className="bi bi-github fs-5"></i>

@@ -6,6 +6,7 @@ import 'bootstrap/dist/css/bootstrap.rtl.min.css';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 import 'animate.css';
 import './App.css';
+import { AuthProvider } from './context/AuthContext';
 
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
@@ -47,6 +48,7 @@ const ProtectedRoute = ({ children }) => {
 
 function App() {
   return (
+    <AuthProvider>
     <Router>
       <ScrollToTop />
       <Toaster position="top-center" reverseOrder={false} />
@@ -64,6 +66,8 @@ function App() {
               <Route path="/profile/:userId" element={<UserProfile />} />
               <Route path="/registration/:id" element={<RegistrationPage />} />
 
+              
+
               <Route path="/setup-profile" element={<SetupProfile />} />
               <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
               <Route path="/edit-profile" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
@@ -76,7 +80,7 @@ function App() {
               <Route path="/manage-requests/:id" element={<ProtectedRoute><RequestsPage /></ProtectedRoute>} />
               <Route path="/evaluate/:teamId" element={<ProtectedRoute><TeamEvaluation /></ProtectedRoute>} />
 
-              {/* حل مشكلة الزر: تأكد من تمرير المعرف بشكل صحيح وتغليفه بالحماية */}
+            
               <Route path="/todo-list/:teamId" element={<ProtectedRoute><TodoListPage /></ProtectedRoute>} />
 
               {/* معالجة الأخطاء */}
@@ -89,6 +93,7 @@ function App() {
         <Footer />
       </div>
     </Router>
+    </AuthProvider>
   );
 }
 

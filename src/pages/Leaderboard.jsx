@@ -1,13 +1,19 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+import { useAuth } from '../context/AuthContext'; 
+
 export const Leaderboard = () => {
     const navigate = useNavigate();
+    // 2. جلب حالة المستخدم الحالي
+    const { user, isLoggedIn } = useAuth(); 
+    
     const [activeTab, setActiveTab] = useState('students');
     const mainGreen = '#1a5d44';
     const accentGold = '#FFD700';
     const accentBronze = '#CD7F32';
 
+    // بيانات تجريبية (يمكن استبدالها ببيانات من الـ API لاحقاً)
     const students = [
         { id: 101, name: "أحمد العتيبي", specialty: "هندسة برمجيات", points: 3200, rank: 1 },
         { id: 102, name: "سارة محمود", specialty: "أمن سيبراني", points: 2950, rank: 2 },
@@ -33,10 +39,15 @@ export const Leaderboard = () => {
     const others = data.filter(item => item.rank > 3);
 
     const handleNavigation = (id) => {
+        // حماية الخصوصية: لا يمكن رؤية البروفايلات إلا للمسجلين
+        if (!isLoggedIn) {
+            navigate('/login');
+            return;
+        }
+
         if (activeTab === 'students') {
             navigate(`/profile/${id}`);
         } else {
-
             console.log("Team navigation not implemented yet");
         }
     };
@@ -49,7 +60,7 @@ export const Leaderboard = () => {
                     .nav-pills-academic { background: #eee; padding: 4px; border-radius: 12px; display: inline-flex; }
                     .nav-pills-academic .btn { border-radius: 10px; font-weight: 600; transition: 0.3s; padding: 8px 25px; border: none; }
                     .nav-pills-academic .active { background: ${mainGreen}; color: white !important; box-shadow: 0 4px 10px rgba(26, 93, 68, 0.2); }
-                    .podium-box { transition: transform 0.3s ease; padding: 20px 10px; border-radius: 20px; background: linear-gradient(180deg, #ffffff 0%, #f9f9f9 100%); cursor: pointer; }
+                    .podium-box { transition: transform 0.3s ease; padding: 20px 10px; border-radius: 20px; background: linear-gradient(180deg, #ffffff 0%, #f9f9f9 100%); cursor: pointer; position: relative; }
                     .podium-box:hover { transform: scale(1.05); }
                     .rank-1 { transform: translateY(-15px); border: 2px solid ${accentGold}22; box-shadow: 0 10px 25px rgba(255, 215, 0, 0.1); }
                     .name-link { color: #2c3e50; text-decoration: none; font-weight: 700; cursor: pointer; transition: 0.2s; }
@@ -57,6 +68,8 @@ export const Leaderboard = () => {
                     .tab-content-animate { animation: slideUp 0.4s ease-out; }
                     @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
                     .points-badge { background: #e8f5e9; color: ${mainGreen}; padding: 4px 12px; border-radius: 8px; font-weight: 800; }
+                    /* تمييز المستخدم الحالي */
+                    .is-me { background-color: #fff9c4 !important; border-right: 4px solid ${accentGold}; }
                 `}
             </style>
 
@@ -79,7 +92,7 @@ export const Leaderboard = () => {
                 {topThree.map((item) => (
                     <div key={item.id} className="col-4">
                         <div 
-                            className={`podium-box shadow-sm ${item.rank === 1 ? 'rank-1' : ''}`}
+                            className={`podium-box shadow-sm ${item.rank === 1 ? 'rank-1' : ''} ${user?.id === item.id ? 'border border-success' : ''}`}
                             onClick={() => handleNavigation(item.id)}
                         >
                             <div className="mb-2">
@@ -87,7 +100,9 @@ export const Leaderboard = () => {
                                 {item.rank === 2 && <i className="bi bi-award-fill fs-2 text-secondary"></i>}
                                 {item.rank === 3 && <i className="bi bi-award-fill fs-3" style={{ color: accentBronze }}></i>}
                             </div>
-                            <div className="name-link fs-6 mb-1">{item.name}</div>
+                            <div className="name-link fs-6 mb-1">
+                                {item.name} {user?.id === item.id && "(أنت)"}
+                            </div>
                             <div className="text-muted extra-small mb-2" style={{ fontSize: '0.75rem' }}>
                                 {activeTab === 'students' ? item.specialty : item.category}
                             </div>
@@ -115,13 +130,13 @@ export const Leaderboard = () => {
                         </thead>
                         <tbody>
                             {others.map((item) => (
-                                <tr key={item.id}>
+                                <tr key={item.id} className={user?.id === item.id ? "is-me" : ""}>
                                     <td className="py-3 text-center">
                                         <span className="badge rounded-pill bg-light text-dark border px-3">#{item.rank}</span>
                                     </td>
                                     <td className="py-3">
                                         <div className="name-link" onClick={() => handleNavigation(item.id)}>
-                                            {item.name}
+                                            {item.name} {user?.id === item.id && " (أنت)"}
                                         </div>
                                         <div className="text-muted" style={{ fontSize: '0.75rem' }}>
                                             {activeTab === 'students' ? item.specialty : item.category}

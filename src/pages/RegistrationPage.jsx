@@ -3,18 +3,22 @@ import { useNavigate, useParams } from 'react-router-dom';
 import Swal from 'sweetalert2'; 
 import toast from 'react-hot-toast';
 
+import { useAuth } from '../context/AuthContext'; 
+
 export const RegistrationPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const mainGreen = '#1a5d44';
 
-    const [isLoggedIn] = useState(true); 
+    // سحب حالة التسجيل وبيانات المستخدم من السياق
+    const { isLoggedIn, user } = useAuth(); 
+    
     const [regType, setRegType] = useState('individual');
     const [step, setStep] = useState(1);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const [formData, setFormData] = useState({
-        studentId: '',
+        studentId: user?.studentId || '', // تعبئة تلقائية إذا توفرت في السياق
         teamName: '',
     });
 
@@ -36,7 +40,6 @@ export const RegistrationPage = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         
-    
         const confirmResult = await Swal.fire({
             title: 'تأكيد البيانات',
             html: `أنت على وشك التسجيل كـ <b>${regType === 'individual' ? 'مشارك فردي' : `فريق باسم (${formData.teamName})`}</b>.<br>هل البيانات صحيحة؟`,
@@ -51,9 +54,7 @@ export const RegistrationPage = () => {
 
         if (!confirmResult.isConfirmed) return;
 
-        
         setIsSubmitting(true);
-        
         
         Swal.fire({
             title: 'جاري معالجة طلبك...',
@@ -64,10 +65,9 @@ export const RegistrationPage = () => {
             customClass: { popup: 'rounded-5' }
         });
 
-        
+        // هنا يتم استبدال الـ setTimeout بطلب Axios حقيقي لاحقاً
         setTimeout(() => {
             setIsSubmitting(false);
-            
             
             Swal.fire({
                 title: 'مبارك، تم قبول تسجيلك!',
@@ -127,7 +127,7 @@ export const RegistrationPage = () => {
                     <div className="card reg-card shadow-lg border-0">
                         <div className="p-4 text-white text-center" style={{ backgroundColor: mainGreen }}>
                             <h5 className="fw-bold mb-1">تسجيل في الهاكاثون</h5>
-                            <p className="small opacity-75 mb-0">خطوة واحدة تفصلك عن الإبداع</p>
+                            <p className="small opacity-75 mb-0">مرحباً بك مجدداً، {user?.fullName?.split(' ')[0]}</p>
                         </div>
 
                         <div className="card-body p-4 p-md-5 text-end">
@@ -156,8 +156,15 @@ export const RegistrationPage = () => {
                                 <form onSubmit={handleSubmit} className="animate__animated animate__fadeIn">
                                     <div className="mb-4">
                                         <label className="form-label small fw-bold">الرقم الجامعي</label>
-                                        <input type="text" className="form-control custom-input text-end" placeholder="مثلاً: 202110255" required
-                                            onChange={(e) => setFormData({...formData, studentId: e.target.value})} />
+                                        <input 
+                                            type="text" 
+                                            className="form-control custom-input text-end" 
+                                            value={formData.studentId}
+                                            placeholder="مثلاً: 202110255" 
+                                            required
+                                            onChange={(e) => setFormData({...formData, studentId: e.target.value})} 
+                                        />
+                                        <div className="form-text x-small text-muted">سيتم ربط التسجيل ببريدك: {user?.email}</div>
                                     </div>
 
                                     {regType === 'team' && (

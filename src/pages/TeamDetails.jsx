@@ -1,9 +1,11 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
+import { useAuth } from '../context/AuthContext';
 
 export const TeamDetails = () => {
     const navigate = useNavigate();
+    const { user } = useAuth(); 
     const mainGreen = '#1a5d44';
 
     const teamData = {
@@ -22,9 +24,16 @@ export const TeamDetails = () => {
         ]
     };
 
+    // التحقق مما إذا كان المستخدم الحالي هو قائد الفريق
+    const isCurrentUserOwner = teamData.members.find(m => m.id === user?.id)?.isOwner;
+
     const getDefaultAvatar = (seed) => `https://api.dicebear.com/7.x/identicon/svg?seed=${seed}`;
 
     const handleLeaveTeam = () => {
+        if (isCurrentUserOwner) {
+            return Swal.fire('تنبيه', 'لا يمكن لقائد الفريق المغادرة قبل تعيين قائد جديد أو حذف الفريق.', 'info');
+        }
+
         Swal.fire({
             title: 'هل أنت متأكد؟',
             text: "لن تتمكن من الوصول إلى ملفات الفريق بعد المغادرة!",
@@ -96,6 +105,7 @@ export const TeamDetails = () => {
                                         <div>
                                             <h6 className="fw-bold mb-0">
                                                 {member.name}
+                                                {member.id === user?.id && <span className="ms-2 badge bg-info text-white small" style={{ fontSize: '0.6rem' }}>أنت</span>}
                                                 {member.isOwner && <span className="ms-2 badge bg-warning text-dark small" style={{ fontSize: '0.6rem' }}>قائد</span>}
                                             </h6>
                                             <small className="text-muted">{member.role}</small>
@@ -108,7 +118,6 @@ export const TeamDetails = () => {
                 </div>
 
                 <div className="col-lg-4">
-                    {/* روابط سريعة */}
                     <div className="card detail-card shadow-sm p-4 bg-white mb-4 border-0">
                         <h5 className="fw-bold mb-4">روابط سريعة</h5>
                         <a href={teamData.githubUrl} target="_blank" rel="noreferrer" className="link-box mb-3 border">
@@ -122,7 +131,6 @@ export const TeamDetails = () => {
                         </a>
                     </div>
 
-
                     <div className="card detail-card shadow-sm p-4 bg-white border-0">
                         <h5 className="fw-bold mb-4">إدارة الفريق</h5>
 
@@ -131,31 +139,32 @@ export const TeamDetails = () => {
                             style={{ background: '#2c3e50' }}
                             onClick={() => navigate(`/todo-list/${teamData.id}`)}
                         >
-                        <i className="bi bi-check2-square me-2"></i> قائمة مهام الفريق
-                    </button>
+                            <i className="bi bi-check2-square me-2"></i> قائمة مهام الفريق
+                        </button>
 
-                    <button
-                        className="btn w-100 py-3 mb-3 fw-bold shadow-sm btn-action"
-                        style={{ background: mainGreen, color: 'white' }}
-                        onClick={() => navigate(`/evaluate/${teamData.id}`)}
-                    >
-                        <i className="bi bi-star-fill me-2"></i> تقييم أعضاء الفريق
-                    </button>
+                        <button
+                            className="btn w-100 py-3 mb-3 fw-bold shadow-sm btn-action"
+                            style={{ background: mainGreen, color: 'white' }}
+                            onClick={() => navigate(`/evaluate/${teamData.id}`)}
+                        >
+                            <i className="bi bi-star-fill me-2"></i> تقييم أعضاء الفريق
+                        </button>
 
-                    <button
-                        className="btn btn-outline-danger w-100 py-3 fw-bold btn-action"
-                        onClick={handleLeaveTeam}
-                    >
-                        <i className="bi bi-box-arrow-right me-2"></i> مغادرة الفريق
-                    </button>
+                        {/* زر المغادرة يظهر للجميع ولكن بآلية تحقق مختلفة للقائد */}
+                        <button
+                            className="btn btn-outline-danger w-100 py-3 fw-bold btn-action"
+                            onClick={handleLeaveTeam}
+                        >
+                            <i className="bi bi-box-arrow-right me-2"></i> مغادرة الفريق
+                        </button>
 
-                    <hr className="my-4 opacity-25" />
-                    <div className="text-center">
-                        <small className="text-muted small">تاريخ الإنشاء: {teamData.createdAt}</small>
+                        <hr className="my-4 opacity-25" />
+                        <div className="text-center">
+                            <small className="text-muted small">تاريخ الإنشاء: {teamData.createdAt}</small>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-        </div >
     );
 };
