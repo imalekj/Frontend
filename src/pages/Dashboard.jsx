@@ -42,7 +42,6 @@ export const Dashboard = () => {
     ];
 
     const handleJoinClick = (id) => {
-        // التحقق الآن يعتمد على الـ Context
         if (!isLoggedIn) {
             Swal.fire({
                 title: '<span style="font-family: Cairo">خطوة واحدة تفصلك!</span>',
@@ -61,7 +60,7 @@ export const Dashboard = () => {
                 }
             });
         } else {
-            navigate(`/competition-details/${id}`);
+            navigate(`/competition/${id}`);
         }
     };
 
@@ -160,7 +159,7 @@ export const Dashboard = () => {
                                         <button className="btn-prime shadow-sm" onClick={() => navigate('/login')}>
                                             تسجيل الدخول
                                         </button>
-                                        <button className="btn-ghost" onClick={() => navigate('/verify-email')}>
+                                        <button className="btn-ghost" onClick={() => navigate('/setup-profile')}>
                                             انضم إلينا الآن
                                         </button>
                                     </>
@@ -189,7 +188,7 @@ export const Dashboard = () => {
                                         <h5 className="fw-bold mb-1">{comp.title}</h5>
                                         <div className="text-muted small fw-bold">
                                             <i className="bi bi-people-fill ms-1"></i> {comp.required}
-                                        </div>
+                                        </div>ّ
                                     </div>
                                 </div>
                                 <div className="mt-3 mt-md-0 d-flex gap-2">
