@@ -38,12 +38,11 @@ export const Login = () => {
             const data = await response.json();
            
             if (response.ok) {
+               login(
+                        data.token,    // التوكن
+                        data.user      // بيانات المستخدم (identifier, fullName, ... )
+                    );               
                 
-                login({
-                    token: data.token,
-                      fullName: data.user.fullName,
-                        identifier: data.user.identifier
-                });
                 login(data.token, data.user); 
                 Swal.fire({
                     title: 'أهلاً بك مجدداً!',
