@@ -36,16 +36,15 @@ export const Login = () => {
             });
 
             const data = await response.json();
-
+            console.log(data);
             if (response.ok) {
                 
                 login({
                     token: data.token,
-                    fullName: data.fullName || "مالك جابر",
-                    identifier: credentials.identifier,
-                    ...data.user 
+                      fullName: data.user.fullName,
+                        identifier: data.user.identifier
                 });
-
+                 localStorage.setItem('user', JSON.stringify(data.user));
                 Swal.fire({
                     title: 'أهلاً بك مجدداً!',
                     text: 'تم تسجيل الدخول بنجاح',
