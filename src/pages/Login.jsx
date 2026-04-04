@@ -36,7 +36,7 @@ export const Login = () => {
             });
 
             const data = await response.json();
-            console.log(data);
+           
             if (response.ok) {
                 
                 login({
@@ -44,7 +44,7 @@ export const Login = () => {
                       fullName: data.user.fullName,
                         identifier: data.user.identifier
                 });
-                 localStorage.setItem('user', JSON.stringify(data.user));
+                login(data.token, data.user); 
                 Swal.fire({
                     title: 'أهلاً بك مجدداً!',
                     text: 'تم تسجيل الدخول بنجاح',
