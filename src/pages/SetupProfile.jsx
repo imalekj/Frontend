@@ -133,16 +133,18 @@ export const SetupProfile = () => {
         formDataToSend.append("UserName", formData.userName);
         formDataToSend.append("Email", formData.email);
         formDataToSend.append("Password", formData.password);
-       formDataToSend.append("Role", true);
-        formDataToSend.append("UniversityMajor", formData.universityMajor);
-        formDataToSend.append("WorkField", formData.workField);
-        formDataToSend.append("GithubUrl", formData.githubUrl);
 
-        // skills
-        formData.skills.forEach((skill, index) => {
-            formDataToSend.append(`Skills[${index}]`, skill);
-        });
+        // Role
+        formDataToSend.append("Role", true);
 
+        // strings
+        formDataToSend.append("githubUrl", formData.githubUrl || "");
+        formDataToSend.append("workField", formData.workField || "");
+        formDataToSend.append("Specialization", formData.universityMajor || "");
+        formDataToSend.append("Description", formData.description || "");
+
+     formDataToSend.append("skills", formData.skills.join(","));
+      
         // projects
         formData.pastProjects.forEach((proj, index) => {
             formDataToSend.append(`PastProjects[${index}].Title`, proj.title);
