@@ -41,44 +41,70 @@ export const CreatePost = () => {
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        
-        // مثال بسيط للتحقق من التاريخ
-        const selectedDate = new Date(formData.deadline);
-        const today = new Date();
-        if (selectedDate < today) {
-            return Swal.fire({
-                icon: 'error',
-                title: 'التاريخ غير منطقي',
-                text: 'يرجى اختيار تاريخ موعد نهائي في المستقبل.',
-                confirmButtonColor: mainGreen,
-            });
-        }
+const handleSubmit = async (e) => {
+    e.preventDefault();
 
+    const selectedDate = new Date(formData.deadline);
+    const today = new Date();
+    if (selectedDate < today) {
+        return Swal.fire({
+            icon: 'error',
+            title: 'التاريخ غير منطقي',
+            text: 'يرجى اختيار تاريخ موعد نهائي في المستقبل.',
+            confirmButtonColor: mainGreen,
+        });
+    }
+
+    try {
         Swal.fire({
             title: 'جاري النشر...',
             allowOutsideClick: false,
-            didOpen: () => {
-                Swal.showLoading();
-            },
-            timer: 1500
-        }).then(() => {
-            // هنا سيتم استدعاء axios.post مستقبلاً لإرسال formData لـ Node.js
-            console.log("Post Data Prepared for DB:", formData);
-            
-            Swal.fire({
-                icon: 'success',
-                title: 'تم النشر بنجاح!',
-                text: 'سيكون منشورك مرئياً لمجتمع الزيتونة الآن.',
-                confirmButtonColor: mainGreen,
-                confirmButtonText: 'رائع',
-                customClass: { popup: 'rounded-4' }
-            }).then(() => {
-                navigate('/competitions');
-            });
+            didOpen: () => Swal.showLoading(),
         });
-    };
+
+        // 🔥 تحويل البيانات للشكل المطلوب للـ C#
+        const dataToSend = {
+            name: formData.title,
+            descriptions: formData.content,
+            rating: "0",
+            isGraduationProject: formData.category === "مشروع",
+            endDate: new Date(formData.deadline).toISOString(),
+            skills: formData.skills,
+            availableSeats: formData.participationType === "فريق" ? formData.maxMembers : 1,
+            projectLocation: formData.location,
+            teamType: formData.participationType,
+            numberOfAvailableSeats: formData.maxMembers
+        };
+
+        const response = await fetch("https://localhost:7011/api/Posts/Create", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(dataToSend)
+        });
+
+        if (!response.ok) throw new Error("Request failed");
+
+        Swal.fire({
+            icon: 'success',
+            title: 'تم النشر بنجاح!',
+            confirmButtonColor: mainGreen,
+        }).then(() => {
+            navigate('/competitions');
+        });
+
+    } catch (error) {
+        console.error(error);
+
+        Swal.fire({
+            icon: 'error',
+            title: 'فشل النشر',
+            text: 'حدث خطأ أثناء إرسال البيانات',
+            confirmButtonColor: mainGreen,
+        });
+    }
+};
 
     const handleCancel = () => {
         if (formData.title || formData.content) {
