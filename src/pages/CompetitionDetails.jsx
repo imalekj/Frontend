@@ -1,46 +1,59 @@
-import React, { useState, useContext } from 'react'; // 1. إضافة useContext
+
 import { useParams, useNavigate } from 'react-router-dom';
-import { AuthContext } from '../context/AuthContext'; 
+import { useAuth } from '../context/AuthContext';
+import React, { useState, useContext, useEffect } from 'react';
 
 export const CompetitionDetails = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const mainGreen = '#1a5d44';
+const [user2, setUser2] = useState(null);
 
-    const { isLoggedIn } = useContext(AuthContext); 
+const { user, token } = useAuth();
+const isLoggedIn = !!token;
 
-    const user = localStorage.getItem('user');
-    const userData = user ? JSON.parse(user) : null;
+const userData = user; // ✔ بدون parse
 
     const [commentText, setCommentText] = useState("");
     const [comments, setComments] = useState([
         { id: 1, name: "سارة محمود", text: "هل يمكن لطلاب السنة الأولى المشاركة؟", date: "منذ ساعة", avatar: "https://static.vecteezy.com/system/resources/thumbnails/009/292/244/small/default-avatar-icon-of-social-media-user-vector.jpg" },
         { id: 2, name: "عمر خالد", text: "بالتوفيق للجميع، تحدي رائع!", date: "منذ 3 ساعات", avatar: "https://static.vecteezy.com/system/resources/thumbnails/009/292/244/small/default-avatar-icon-of-social-media-user-vector.jpg" }
     ]);
+    const [competition, setCompetition] = useState(null);
+    const [loading, setLoading] = useState(true);
 
-    const competition = {
-        title: "هاكاثون الزيتونة الوطني للبرمجيات 2026",
-        coverImage: "https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=800&q=80",
-        description: "تحدي برمجي مكثف لمدة 3 أيام يهدف لتطوير حلول تقنية ذكية لتعزيز الاستدامة في الحرم الجامعي. المسابقة مفتوحة لجميع التخصصات التقنية في جامعة الزيتونة.",
-        publisher: {
-            id: "user_789",
-            name: "أحمد علي",
-            specialization: "هندسة برمجيات - سنة ثالثة",
-            avatar: "https://static.vecteezy.com/system/resources/thumbnails/009/292/244/small/default-avatar-icon-of-social-media-user-vector.jpg",
-            datePublished: "منذ يومين",
-            requests: 12,
-            remainingDays: 4
-        },
-        stats: {
-            availableSeats: "3 من 5 طلاب",
-            deadline: "15 مايو 2026",
-            reward: "تدريب + جائزة مالية"
-        },
-        requirements: ["طالب مقيد في الجامعة", "إجادة أساسيات البرمجة", "الالتزام بالحضور الشخصي", "العمل ضمن فريق"],
-        skills: ["React.js", "Tailwind CSS", "TypeScript", "Node.js"]
+  const getUserByProject = async (id) => {
+    try {
+        const response = await fetch(
+            `https://localhost:7011/api/Posts/GetUserByProjectId?id=${id}`
+        );
+
+        return await response.json();
+    } catch (error) {
+        console.error(error);
+        return null;
+    }
+};
+useEffect(() => {
+    const fetchData = async () => {
+        try {
+            const res = await fetch(`https://localhost:7011/api/Posts/GetProjectById?id=${id}`);
+            const data = await res.json();
+
+            setCompetition(data);
+
+            const userData = await getUserByProject(id);
+        setUser2(userData);
+
+        } catch (err) {
+            console.log(err);
+        } finally {
+            setLoading(false);
+        }
     };
 
-    const isOwner = isLoggedIn && competition.publisher.id === userData?.id;
+    fetchData();
+}, [id]);
 
     const handleAddComment = (e) => {
         e.preventDefault();
@@ -60,8 +73,38 @@ export const CompetitionDetails = () => {
 
     const handleApply = () => isLoggedIn ? navigate(`/registration/${id}`) : navigate('/login');
     const handleManageRequests = () => navigate(`/requests/${id}`);
-    const handleProfileClick = () => navigate(`/profile/${competition.publisher.id}`);
+    const handleProfileClick = () => navigate(`/profile/${competition.projectID}`);
+    const formatDate = (dateString) => {
+    if (!dateString) return "";
 
+    return new Date(dateString).toLocaleDateString("en-GB", {
+        year: "numeric",
+        month: "long",
+        day: "numeric"
+    });
+};
+        const skills = competition?.skills
+    ? competition.skills.split(",").map(s => s.trim())
+    : [];
+
+if (loading || !competition) {
+    return (
+        <div className="text-center p-5">
+            جاري تحميل البيانات...
+        </div>
+    );
+}
+const getDaysLeft = (endDate) => {
+    const today = new Date();
+    const end = new Date(endDate);
+
+    const diffTime = end - today; // الفرق بالمللي ثانية
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    return diffDays;
+};
+const imageUrl = `https://localhost:7011${user2?.imagePath}`;
+const isOwner = user2?.id === userData?.id;
     return (
         <div className="container py-4 text-end" dir="rtl" style={{ fontFamily: 'Cairo, sans-serif', maxWidth: '1000px' }}>
             <style>
@@ -79,41 +122,54 @@ export const CompetitionDetails = () => {
                 `}
             </style>
 
-            <img src={competition.coverImage} className="comp-header-img shadow-sm" alt="Cover" />
+                                                <img
+                        src={
+                            competition.coverImage ||
+                            "https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=800&q=80"
+                        }
+                        className="comp-header-img shadow-sm"
+                        alt="Cover"
+                    />
 
             <div className="row g-4">
                 <div className="col-lg-8">
                     <div className="mb-4">
                         <span className="badge bg-light text-success border mb-2 px-3 py-2">مسابقة برمجية</span>
-                        <h2 className="fw-900 mb-3" style={{ color: '#1a223' }}>{competition.title}</h2>
+                        <h2 className="fw-900 mb-3" style={{ color: '#1a223' }}>{competition.name}</h2>
                         
-                        <div className="publisher-mini mb-4" onClick={handleProfileClick}>
-                            <img src={competition.publisher.avatar} width="45" height="45" className="rounded-circle border" alt="Publisher" />
+                        <div className="publisher-mini mb-4" >
+                            <img
+     src={user2?.imagePath ? `https://localhost:7011${user2.imagePath}` : "https://via.placeholder.com/45"}
+    width="45"
+    height="45"
+    className="rounded-circle border"
+    alt="Publisher"
+/>
                             <div>
-                                <div className="fw-bold small">{competition.publisher.name}</div>
-                                <div className="text-muted" style={{fontSize: '0.75rem'}}>{competition.publisher.specialization} • {competition.publisher.datePublished}</div>
+                                <div className="fw-bold small">{user2?.fullName}</div>
+                                <div className="text-muted" style={{fontSize: '0.75rem'}}>{user2?.userName} </div>
                             </div>
                         </div>
                     </div>
 
                     <h6 className="fw-bold mb-3"><i className="bi bi-info-circle me-1"></i> وصف المسابقة</h6>
-                    <p className="text-muted small lh-lg mb-5">{competition.description}</p>
+                    <p className="text-muted small lh-lg mb-5">{competition.descriptions}</p>
 
                     <div className="row mb-5">
                         <div className="col-md-6">
                             <h6 className="fw-bold mb-3">المتطلبات الأساسية</h6>
-                            {competition.requirements.map((req, i) => (
-                                <div key={i} className="small text-muted mb-2">
-                                    <i className="bi bi-check2-circle text-success ms-2"></i> {req}
-                                </div>
-                            ))}
+                            <div className="small text-muted">
+                            <i className="bi bi-geo-alt"></i> {competition.projectLocation}
+                            </div>
                         </div>
                         <div className="col-md-6">
                             <h6 className="fw-bold mb-3">المهارات المطلوبة</h6>
                             <div className="d-flex flex-wrap gap-2">
-                                {competition.skills.map(skill => (
-                                    <span key={skill} className="skill-badge">{skill}</span>
-                                ))}
+                            {skills.map((skill, i) => (
+                                <span key={i} className="skill-badge">
+                                    {skill}
+                                </span>
+                            ))}
                             </div>
                         </div>
                     </div>
@@ -167,21 +223,21 @@ export const CompetitionDetails = () => {
                         <h6 className="fw-bold mb-3 border-bottom pb-2">تفاصيل التسجيل</h6>
                         <div className="stat-row">
                             <span className="text-muted small">المقاعد المتاحة</span>
-                            <span className="fw-bold small text-success">{competition.stats.availableSeats}</span>
+                            <span className="fw-bold small text-success">{competition.availableSeats}</span>
                         </div>
                         <div className="stat-row">
                             <span className="text-muted small">آخر موعد</span>
-                            <span className="fw-bold small">{competition.stats.deadline}</span>
+                            <span className="fw-bold small">{formatDate(competition.endDate)}</span>
                         </div>
                         <div className="stat-row">
                             <span className="text-muted small">الجائزة</span>
-                            <span className="fw-bold small">{competition.stats.reward}</span>
+                            <span className="fw-bold small">{"World Cup"}</span>
                         </div>
 
                         <div className="mt-4">
                             {isOwner ? (
                                 <button className="btn-action bg-warning text-dark border-0" onClick={handleManageRequests}>
-                                    إدارة الطلبات ({competition.publisher.requests})
+                                    إدارة الطلبات ()
                                 </button>
                             ) : (
                                 <button 
@@ -191,10 +247,10 @@ export const CompetitionDetails = () => {
                                     {isLoggedIn ? 'سجل الآن في المسابقة' : 'سجل الدخول للتقديم'}
                                 </button>
                             )}
-                            <div className="text-center mt-3">
-                                <small className="text-danger fw-bold" style={{fontSize: '0.75rem'}}>
+                                                    <div className="text-center mt-3">
+                                <small className="text-danger fw-bold" style={{ fontSize: '0.75rem' }}>
                                     <i className="bi bi-alarm ms-1"></i>
-                                    ينتهي التسجيل خلال {competition.publisher.remainingDays} أيام
+                                    ينتهي التسجيل خلال {getDaysLeft(competition.endDate)} أيام
                                 </small>
                             </div>
                         </div>
