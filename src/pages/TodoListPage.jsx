@@ -18,6 +18,7 @@ export const TodoListPage = () => {
     const fetchTeamTasks = async () => {
         setLoading(true);
         try {
+            // محاكاة جلب البيانات من API
             setTimeout(() => {
                 const mockTasks = [
                     { id: 1, text: 'تحليل المتطلبات النهائية للمشروع', completed: true },
@@ -40,21 +41,20 @@ export const TodoListPage = () => {
 
     const addTask = (e) => {
         e.preventDefault();
-        if (!isOwner) {
-            toast.error('عذراً، قائد الفريق فقط يمكنه إضافة مهام');
-            return;
-        }
+        
+        // تم إزالة شرط (if (!isOwner)) للسماح لجميع الأعضاء
         if (!newTask.trim()) return;
         
         const task = { 
             id: Date.now(), 
             text: newTask, 
-            completed: false 
+            completed: false,
+            addedBy: user?.name || 'عضو الفريق' // إضافة اسم الشخص الذي أضاف المهمة (اختياري)
         };
         
         setTasks([task, ...tasks]);
         setNewTask('');
-        toast.success('تمت إضافة المهمة');
+        toast.success('تمت إضافة المهمة بواسطة ' + (user?.name || 'عضو'));
     };
 
     const toggleComplete = (id) => {
@@ -64,10 +64,7 @@ export const TodoListPage = () => {
     };
 
     const deleteTask = (id) => {
-        if (!isOwner) {
-            toast.error('لا تملك صلاحية حذف المهام');
-            return;
-        }
+        // تم إزالة شرط الصلاحية هنا أيضاً للسماح للجميع بالحذف
         setTasks(tasks.filter(task => task.id !== id));
         toast.error('تم حذف المهمة');
     };
@@ -102,8 +99,8 @@ export const TodoListPage = () => {
                             <button onClick={() => navigate(-1)} className="btn btn-sm btn-outline-secondary mb-2 rounded-pill">
                                 <i className="bi bi-arrow-right me-1"></i> العودة
                             </button>
-                            <h2 className="fw-bold mb-1" style={{ color: mainGreen }}>قائمة مهام الفريق</h2>
-                            <p className="text-muted mb-0 small">مرحباً {user?.name}، تابع إنجازات فريقك</p>
+                            <h2 className="fw-bold mb-1" style={{ color: mainGreen }}>قائمة مهام الفريق المشتركة</h2>
+                            <p className="text-muted mb-0 small">بإمكان جميع أعضاء الفريق التعاون في إدارة المهام</p>
                         </div>
                         <button className="btn-refresh shadow-sm" onClick={fetchTeamTasks} disabled={loading}>
                             {loading ? <span className="spinner-border spinner-border-sm me-2"></span> : <i className="bi bi-arrow-repeat me-2"></i>}
@@ -114,34 +111,32 @@ export const TodoListPage = () => {
 
                 <div className="row justify-content-center">
                     <div className="col-lg-8">
-                        {/* لا يظهر نموذج الإضافة إلا للقائد */}
-                        {isOwner && (
-                            <div className="card todo-card shadow-sm p-4 mb-4 animate__animated animate__fadeIn">
-                                <form onSubmit={addTask}>
-                                    <div className="input-group shadow-sm" style={{ borderRadius: '12px', overflow: 'hidden' }}>
-                                        <input 
-                                            type="text" 
-                                            className="form-control input-task bg-light text-end" 
-                                            placeholder="أضف مهمة جديدة للفريق..."
-                                            value={newTask}
-                                            onChange={(e) => setNewTask(e.target.value)}
-                                        />
-                                        <button type="submit" className="btn-add">إضافة</button>
-                                    </div>
-                                </form>
-                            </div>
-                        )}
+                        {/* نموذج الإضافة يظهر للجميع الآن */}
+                        <div className="card todo-card shadow-sm p-4 mb-4 animate__animated animate__fadeIn">
+                            <form onSubmit={addTask}>
+                                <div className="input-group shadow-sm" style={{ borderRadius: '12px', overflow: 'hidden' }}>
+                                    <input 
+                                        type="text" 
+                                        className="form-control input-task bg-light text-end" 
+                                        placeholder="أضف مهمة للفريق يا {user?.name}..."
+                                        value={newTask}
+                                        onChange={(e) => setNewTask(e.target.value)}
+                                    />
+                                    <button type="submit" className="btn-add">إضافة مهمة</button>
+                                </div>
+                            </form>
+                        </div>
 
                         <div className="todo-content">
                             {loading ? (
                                 <div className="text-center py-5 shadow-sm bg-white rounded-4">
                                     <div className="spinner-border" style={{ color: mainGreen }} role="status"></div>
-                                    <p className="mt-3 text-muted">جاري تحميل المهام...</p>
+                                    <p className="mt-3 text-muted">جاري تحميل المهام التعاونية...</p>
                                 </div>
                             ) : tasks.length === 0 ? (
                                 <div className="text-center py-5 shadow-sm bg-white rounded-4 border-2 border-dashed">
                                     <i className="bi bi-journal-x fs-1 text-muted"></i>
-                                    <p className="text-muted mt-2">لا توجد مهام حالية.</p>
+                                    <p className="text-muted mt-2">لا توجد مهام حالية. ابدأ بإضافة أول مهمة!</p>
                                 </div>
                             ) : (
                                 <div className="tasks-container">
@@ -155,19 +150,20 @@ export const TodoListPage = () => {
                                                     onChange={() => toggleComplete(task.id)}
                                                     style={{ accentColor: mainGreen }}
                                                 />
-                                                <span className={`fs-5 fw-medium ${task.completed ? 'completed-text' : 'text-dark'}`}>
-                                                    {task.text}
-                                                </span>
+                                                <div className="d-flex flex-column">
+                                                    <span className={`fs-5 fw-medium ${task.completed ? 'completed-text' : 'text-dark'}`}>
+                                                        {task.text}
+                                                    </span>
+                                                    {task.addedBy && <small className="text-muted" style={{fontSize: '0.7rem'}}>أضيفت بواسطة: {task.addedBy}</small>}
+                                                </div>
                                             </div>
-                                            {/* أيقونة الحذف تظهر فقط للقائد */}
-                                            {isOwner && (
-                                                <button 
-                                                    onClick={() => deleteTask(task.id)} 
-                                                    className="btn btn-outline-danger border-0 rounded-circle"
-                                                >
-                                                    <i className="bi bi-trash3"></i>
-                                                </button>
-                                            )}
+                                            {/* أيقونة الحذف متاحة للجميع الآن */}
+                                            <button 
+                                                onClick={() => deleteTask(task.id)} 
+                                                className="btn btn-outline-danger border-0 rounded-circle"
+                                            >
+                                                <i className="bi bi-trash3"></i>
+                                            </button>
                                         </div>
                                     ))}
                                 </div>
@@ -177,7 +173,7 @@ export const TodoListPage = () => {
                         {!loading && tasks.length > 0 && (
                             <div className="card border-0 bg-white p-4 shadow-sm rounded-4 mt-4">
                                 <div className="d-flex justify-content-between align-items-center mb-2">
-                                    <span className="fw-bold" style={{ color: mainGreen }}>نسبة الإنجاز الكلية</span>
+                                    <span className="fw-bold" style={{ color: mainGreen }}>إنجاز الفريق</span>
                                     <span className="badge rounded-pill p-2" style={{ backgroundColor: mainGreen }}>
                                         {completionRate}%
                                     </span>
