@@ -117,37 +117,76 @@ export const SetupProfile = () => {
         }, 1000);
     };
 
-    const verifyAndSubmit = async (e) => {
-        e.preventDefault();
-        if (verificationCode.length < 4) return toast.error("يرجى إدخال كود التحقق الصحيح");
-        
-        setLoading(true);
-        
-        // محاكاة عملية إنشاء الحساب والتحقق من الكود
-        setTimeout(() => {
-            // البيانات التي سيتم تخزينها في الـ Context (تعدل حسب استجابة الـ Backend لديك)
-            const userData = {
-                userName: formData.userName,
-                fullName: formData.fullName,
-                email: formData.email,
-                role: formData.role,
-                major: formData.universityMajor
-            };
-            const token = "mock_token_123"; // توكن افتراضي من السيرفر
+ const verifyAndSubmit = async (e) => {
+    e.preventDefault();
 
-            // تسجيل الدخول تلقائياً
-            login(userData, token); 
+    if (verificationCode.length < 4) {
+        return toast.error("يرجى إدخال كود التحقق الصحيح");
+    }
 
-            setLoading(false);
-            Swal.fire({
-                title: 'تم بنجاح',
-                text: 'تم تفعيل الحساب وإعداد الملف الشخصي، مرحباً بك!',
-                icon: 'success',
-                confirmButtonColor: mainGreen
-            }).then(() => navigate('/profile'));
-        }, 1500);
-    };
+    setLoading(true);
 
+    try {
+        const formDataToSend = new FormData();
+
+        formDataToSend.append("FullName", formData.fullName);
+        formDataToSend.append("UserName", formData.userName);
+        formDataToSend.append("Email", formData.email);
+        formDataToSend.append("Password", formData.password);
+
+        // Role
+        formDataToSend.append("Role", true);
+
+        // strings
+        formDataToSend.append("githubUrl", formData.githubUrl || "");
+        formDataToSend.append("workField", formData.workField || "");
+        formDataToSend.append("Specialization", formData.universityMajor || "");
+        formDataToSend.append("Description", formData.description || "");
+
+     formDataToSend.append("skills", formData.skills.join(","));
+      
+        // projects
+        formData.pastProjects.forEach((proj, index) => {
+            formDataToSend.append(`PastProjects[${index}].Title`, proj.title);
+            formDataToSend.append(`PastProjects[${index}].Link`, proj.link);
+        });
+
+        // image
+        if (formData.profileImage) {
+            formDataToSend.append("ProfileImage", formData.profileImage);
+        }
+
+        const response = await fetch("https://localhost:7011/api/Login/Register", {
+            method: "POST",
+            body: formDataToSend
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.message || "حدث خطأ أثناء التسجيل");
+        }
+
+        // 👇 حسب شكل الريسبونس من الباك
+        const token = data.token;
+        const userData = data.user;
+
+        login(userData, token);
+
+        Swal.fire({
+            title: 'تم بنجاح',
+            text: 'تم إنشاء الحساب بنجاح 🎉',
+            icon: 'success',
+            confirmButtonColor: mainGreen
+        }).then(() => navigate('/profile'));
+
+    } catch (error) {
+        console.error(error);
+        toast.error(error.message);
+    } finally {
+        setLoading(false);
+    }
+};
     return (
         <div className="container py-5" dir="rtl" style={{ fontFamily: 'Cairo, sans-serif' }}>
             <Toaster position="top-center" />

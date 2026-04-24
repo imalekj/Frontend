@@ -1,7 +1,6 @@
-import React, { useState, useContext } from 'react';
+import { useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
-
 export const CompetitionsPage = () => {
     const [mainTab, setMainTab] = useState('الكل'); 
     const [categoryFilter, setCategoryFilter] = useState('الكل');
@@ -13,56 +12,34 @@ export const CompetitionsPage = () => {
     const mainGreen = '#1a5d44';
     const accentGold = '#c5a059';
 
-    const allData = [
-        { 
-            id: 1, 
-            type: "مسابقة", 
-            title: "مسابقة الأمن السيبراني الوطنية (CTF)", 
-            date: "10 يونيو 2024", 
-            category: "IT", 
-            required: "مطلوب طالبين إضافيين", 
-            tags: ["Network", "Linux"],
-            image: "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=400&q=80"
-        },
-        { 
-            id: 2, 
-            type: "مشروع", 
-            title: "تطبيق ذكي لإدارة المكتبة المركزية", 
-            date: "مستمر", 
-            category: "برمجيات", 
-            required: "مطلوب مصمم UI/UX", 
-            tags: ["Figma", "React"],
-            image: "https://images.unsplash.com/photo-1507537297725-24a1c029d3ca?w=400&q=80" 
-        },
-        { 
-            id: 3, 
-            type: "مسابقة", 
-            title: "تحدي الابتكار وريادة الأعمال", 
-            date: "20 يونيو 2024", 
-            category: "أعمال", 
-            required: "مطلوب خبير تسويق", 
-            tags: ["Pitching", "Analysis"],
-            image: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400&q=80"
-        },
-        { 
-            id: 4, 
-            type: "مشروع", 
-            title: "نظام تتبع حافلات الجامعة الذكي", 
-            date: "فصل دراسي", 
-            category: "برمجيات", 
-            required: "مطلوب 3 مطورين Flutter", 
-            tags: ["GPS", "Mobile"],
-            image: "https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=400&q=80"
-        },
-    ];
 
-    const filteredResults = allData.filter(item => {
-        const matchesTab = mainTab === 'الكل' || item.type === mainTab;
-        const matchesCategory = categoryFilter === 'الكل' || item.category === categoryFilter;
-        const matchesSearch = item.title.toLowerCase().includes(searchTerm.toLowerCase());
-        return matchesTab && matchesCategory && matchesSearch;
-    });
+                const [allData, setAllData] = useState([]);
 
+
+
+
+                        useEffect(() => {
+                    fetch("https://localhost:7011/api/Posts/GetAllProject")
+                        .then(res => res.json())
+                        .then(data => setAllData(data))
+                        .catch(err => console.log(err));
+                }, []);
+
+const filteredResults = allData.filter(item => {
+
+    const matchesTab =
+        mainTab === 'الكل' ||
+        (mainTab === 'مشروع' && item.isGraduationProject) ||
+        (mainTab === 'مسابقة' && !item.isGraduationProject);
+
+    const matchesCategory = true; // مؤقتًا (ما عندك category)
+
+    const matchesSearch = (item.name ?? "")
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase());
+
+    return matchesTab && matchesCategory && matchesSearch;
+});
     // دالة التعامل مع النشر
     const handleCreatePost = () => {
         if (isLoggedIn) {
@@ -221,7 +198,7 @@ export const CompetitionsPage = () => {
 
             <div className="row g-4">
                 {filteredResults.length > 0 ? filteredResults.map(item => (
-                    <div key={item.id} className="col-xl-3 col-lg-4 col-md-6">
+                    <div key={item.projectID} className="col-xl-3 col-lg-4 col-md-6">
                         <div className="card comp-card h-100 bg-white border-0 shadow-sm">
                             <div className="img-wrapper">
                                 <div className={`type-tag tag-${item.type}`}>{item.type}</div>
@@ -229,34 +206,55 @@ export const CompetitionsPage = () => {
                                 <div style={{ position: 'absolute', bottom: 0, right: 0, left: 0, height: '50%', background: 'linear-gradient(to top, rgba(0,0,0,0.4), transparent)' }}></div>
                             </div>
                             
-                            <div className="card-body p-4">
+                          <div className="card-body p-4">
+
+                                {/* TOP INFO */}
                                 <div className="d-flex justify-content-between mb-2">
-                                    <span className="category-label">{item.category}</span>
-                                    <span className="text-muted fw-bold" style={{fontSize: '0.7rem'}}>{item.date}</span>
-                                </div>
-                                <h6 className="fw-900 mb-3" style={{ lineHeight: '1.5', height: '2.8em', overflow: 'hidden' }}>{item.title}</h6>
-                                
-                                <div className="requirement-box mb-3">
-                                    <div className="d-flex align-items-center gap-2">
-                                        <i className="bi bi-person-badge text-success"></i>
-                                        <span className="small fw-bold text-dark">{item.required}</span>
-                                    </div>
+
+                                    <span className="category-label">
+                                        {item.projectLocation}
+                                    </span>
+
+                                    <span className="text-muted fw-bold" style={{ fontSize: '0.7rem' }}>
+                                        {new Date(item.endDate).toLocaleDateString('ar-EG')}
+                                    </span>
+
                                 </div>
 
-                                <div className="d-flex flex-wrap gap-1 mb-0">
-                                    {item.tags.map(tag => (
-                                        <span key={tag} className="badge bg-light text-secondary fw-normal" style={{ fontSize: '0.65rem', border: '1px solid #eee' }}>
-                                            #{tag}
+                                {/* TITLE */}
+                                <h6
+                                    className="fw-900 mb-3"
+                                    style={{
+                                        lineHeight: '1.5',
+                                        height: '2.8em',
+                                        overflow: 'hidden'
+                                    }}
+                                >
+                                    {item.name}
+                                </h6>
+
+                                {/* DESCRIPTION / REQUIREMENT */}
+                                <div className="requirement-box mb-3">
+
+                                    <div className="d-flex align-items-center gap-2">
+
+                                        <i className="bi bi-person-badge text-success"></i>
+
+                                        <span className="small fw-bold text-dark">
+                                            {item.descriptions}
                                         </span>
-                                    ))}
+
+                                    </div>
+
                                 </div>
+
                             </div>
 
                             <div className="card-footer bg-transparent border-0 p-4 pt-0">
                                 <button 
                                     className="btn btn-outline-success w-100 fw-bold py-2 shadow-sm"
                                     style={{ borderRadius: '10px', fontSize: '0.85rem' }}
-                                    onClick={() => navigate(`/competition/${item.id}`)}
+                                    onClick={() => navigate(`/competition/${item.projectID}`)}
                                 >
                                     عرض التفاصيل
                                 </button>

@@ -14,41 +14,49 @@ export const UserProfile = () => {
     
     const isOwnProfile = currentUser?.id === parseInt(userId) || currentUser?.id === userId;
 
-    useEffect(() => {
-        const fetchUserData = async () => {
-            try {
-                setLoading(true);
-                
-    
-                
-                setTimeout(() => {
-                    const mockData = {
-                        id: userId,
-                        name: isOwnProfile ? currentUser?.name : "أحمد علي",
-                        role: isOwnProfile ? "طالب تقنية معلومات - الزيتونة" : "هندسة برمجيات - سنة ثالثة",
-                        githubUrl: "https://github.com",
-                        bio: "مطور واجهات طموح أهوى المشاركة في الهاكاثونات البرمجية. أؤمن بأن العمل الجماعي هو مفتاح الابتكار التقني.",
-                        rating: 4.8,
-                        stats: { competitions: 12, wins: 3, teams: 8 },
-                        skills: ["React.js", "Node.js", "TypeScript", "UI/UX Design"],
-                        previousWork: [
-                            { id: 1, title: "تطبيق إدارة المهام", tech: "React & Firebase" },
-                            { id: 2, title: "نظام التسجيل الجامعي", tech: "Node.js & MySQL" }
-                        ],
-                        activeCompetitions: [
-                            { id: 101, title: "هاكاثون الزيتونة الوطني", role: "قائد الفريق", date: "تنتهي خلال 3 أيام" }
-                        ]
-                    };
-                    setUser(mockData);
-                    setLoading(false);
-                }, 800);
-            } catch (error) {
-                console.error("Error fetching user:", error);
-                setLoading(false);
+ useEffect(() => {
+    const fetchUserData = async () => {
+        try {
+            setLoading(true);
+
+            // استدعاء الـ API
+            const response = await fetch(`https://localhost:7011/api/Login/GetUserInfo/${userId}`);
+            
+            if (!response.ok) {
+                throw new Error("فشل في جلب البيانات");
             }
-        };
-        fetchUserData();
-    }, [userId, currentUser, isOwnProfile]);
+
+            const data = await response.json();
+
+            // خلي الـ setTimeout زي ما هو
+            setTimeout(() => {
+                const formattedData = {
+                    id: data.id,
+                    name: data.fullName || data.name,
+                    role: data.role || "غير محدد",
+                    githubUrl: data.githubUrl || "",
+                    bio: data.bio || "",
+                    rating: data.rating || 0,
+                    stats: data.stats || { competitions: 0, wins: 0, teams: 0 },
+                    skills: data.skills || [],
+                    previousWork: data.previousWork || [],
+                    activeCompetitions: data.activeCompetitions || []
+                    ,imagePath: data.imagePath
+                };
+                    
+                setUser(formattedData);
+
+                setLoading(false);
+            }, 800);
+
+        } catch (error) {
+            console.error("Error fetching user:", error);
+            setLoading(false);
+        }
+    };
+
+    fetchUserData();
+}, [userId, currentUser, isOwnProfile]);
 
     if (loading) return (
         <div className="d-flex justify-content-center align-items-center min-vh-100">
@@ -115,7 +123,7 @@ export const UserProfile = () => {
                             <div className="header-gradient">
                                 <div className="avatar-wrapper">
                                     <img 
-                                        src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user.name}`} 
+                                      src={`https://localhost:7011${user.imagePath}`}
                                         className="profile-img shadow-sm" 
                                         alt="User" 
                                     />
