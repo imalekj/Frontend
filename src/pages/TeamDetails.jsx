@@ -1,31 +1,48 @@
-import React from 'react';
+
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import { useAuth } from '../context/AuthContext';
-
+import React, { useEffect, useState } from 'react';
+import { useLocation, useParams } from 'react-router-dom';
 export const TeamDetails = () => {
     const navigate = useNavigate();
     const { user } = useAuth(); 
     const mainGreen = '#1a5d44';
+    const [members, setMembers] = useState([]);
 
-    const teamData = {
-        id: "T-908",
-        name: "فريق تطوير منصة الخريجين",
-        description: "مشروع يهدف لربط خريجي جامعة الزيتونة بسوق العمل وتوفير فرص تدريبية احترافية.",
-        major: "هندسة البرمجيات",
-        status: "قيد التطوير",
-        createdAt: "12 فبراير 2026",
-        githubUrl: "https://github.com/zuj/project",
-        members: [
-            { id: 101, name: "أحمد علي", role: "Team Leader", isOwner: true },
-            { id: 102, name: "سارة خالد", role: "UI/UX Designer", isOwner: false },
-            { id: 103, name: "خالد منصور", role: "Frontend Developer", isOwner: false },
-            { id: 104, name: "ليلى حسن", role: "Backend Developer", isOwner: false },
-        ]
+    const { state } = useLocation();
+    const { teamId } = useParams();
+    const [team, setTeam] = useState(state || null);
+    const [count, setCount] = useState(0);
+
+useEffect(() => {
+    const fetchMembers = async () => {
+        try {
+          const res = await fetch(
+    `https://localhost:7011/api/Teams/GetAllTeamMembersByProjectId?ProjectId=${teamId}`,
+    {
+        method: "POST"
+    }
+);
+                    if (!res.ok) {
+                throw new Error('Network response was not ok');
+            }
+
+            const data = await res.json();
+            setMembers(data);
+           setCount(data.length);
+        } catch (error) {
+            console.error(error);
+            Swal.fire('خطأ', 'فشل تحميل أعضاء الفريق', 'error');
+        }
     };
 
+    fetchMembers();
+}, []);
+
+
     // التحقق مما إذا كان المستخدم الحالي هو قائد الفريق
-    const isCurrentUserOwner = teamData.members.find(m => m.id === user?.id)?.isOwner;
+   const isCurrentUserOwner = members.find(m => m.id === user?.id)?.role === "Manger";
 
     const getDefaultAvatar = (seed) => `https://api.dicebear.com/7.x/identicon/svg?seed=${seed}`;
 
@@ -77,36 +94,49 @@ export const TeamDetails = () => {
                     <div className="card detail-card shadow-sm p-4 p-md-5 bg-white">
                         <div className="d-flex justify-content-between align-items-start mb-4">
                             <div>
-                                <span className="status-badge mb-2 d-inline-block">{teamData.status}</span>
-                                <h2 className="fw-900 mb-2">{teamData.name}</h2>
-                                <p className="text-muted"><i className="bi bi-mortarboard me-1"></i> تخصص {teamData.major}</p>
+                                <span className="status-badge mb-2 d-inline-block">{state?.status}</span>
+                                <h2 className="fw-900 mb-2">{state?.name}</h2>
+                                <p className="text-muted"><i className="bi bi-mortarboard me-1"></i> تخصص {state?.projectType}</p>
                             </div>
                             <div className="text-start">
-                                <span className="badge bg-light text-dark p-2 rounded-3">ID: {teamData.id}</span>
+                                <span className="badge bg-light text-dark p-2 rounded-3">ID: {state?.projectId}</span>
                             </div>
                         </div>
 
                         <h5 className="fw-bold mb-3">وصف المشروع</h5>
-                        <p className="text-secondary leading-loose mb-5">{teamData.description}</p>
+                        <p className="text-secondary leading-loose mb-5">{state?.description}</p>
 
-                        <h5 className="fw-bold mb-4">أعضاء الفريق ({teamData.members.length})</h5>
+                        <h5 className="fw-bold mb-4">أعضاء الفريق ({count })</h5>
                         <div className="row g-3">
-                            {teamData.members.map(member => (
-                                <div key={member.id} className="col-md-6">
+                            {members.map(member =>(
+                                <div key={member.fullName} className="col-md-6">
                                     <div
                                         className="member-item p-3 d-flex align-items-center gap-3"
                                         onClick={() => navigate(`/profile/${member.id}`)}
                                     >
                                         <img
-                                            src={getDefaultAvatar(member.id + member.name)}
+                                              src={member.imagePath 
+                                                        ? `https://localhost:7011${member.imagePath}` 
+                                                        : getDefaultAvatar(member.id)
+                                                    }
                                             style={{ width: '50px', height: '50px', borderRadius: '12px' }}
                                             alt="avatar"
                                         />
                                         <div>
-                                            <h6 className="fw-bold mb-0">
-                                                {member.name}
-                                                {member.id === user?.id && <span className="ms-2 badge bg-info text-white small" style={{ fontSize: '0.6rem' }}>أنت</span>}
-                                                {member.isOwner && <span className="ms-2 badge bg-warning text-dark small" style={{ fontSize: '0.6rem' }}>قائد</span>}
+                                           <h6 className="fw-bold mb-0">
+                                                    {member.fullName}
+
+                                                    {member.id === user?.id && (
+                                                        <span className="ms-2 badge bg-info text-white small">
+                                                            أنت
+                                                        </span>
+                                                    )}
+
+                                                    {member.role === "Manger" && (
+                                                        <span className="ms-2 badge bg-warning text-dark small">
+                                                            قائد
+                                                        </span>
+                                                    )}
                                             </h6>
                                             <small className="text-muted">{member.role}</small>
                                         </div>
@@ -120,7 +150,7 @@ export const TeamDetails = () => {
                 <div className="col-lg-4">
                     <div className="card detail-card shadow-sm p-4 bg-white mb-4 border-0">
                         <h5 className="fw-bold mb-4">روابط سريعة</h5>
-                        <a href={teamData.githubUrl} target="_blank" rel="noreferrer" className="link-box mb-3 border">
+                        <a href={""} target="_blank" rel="noreferrer" className="link-box mb-3 border">
                             <div className="d-flex align-items-center">
                                 <i className="bi bi-github fs-3 me-3"></i>
                                 <div>
@@ -137,7 +167,7 @@ export const TeamDetails = () => {
                         <button
                             className="btn w-100 py-3 mb-3 fw-bold shadow-sm btn-action text-white"
                             style={{ background: '#2c3e50' }}
-                            onClick={() => navigate(`/todo-list/${teamData.id}`)}
+                            onClick={() => navigate(`/todo-list/${state?.id}`)}
                         >
                             <i className="bi bi-check2-square me-2"></i> قائمة مهام الفريق
                         </button>
@@ -145,7 +175,7 @@ export const TeamDetails = () => {
                         <button
                             className="btn w-100 py-3 mb-3 fw-bold shadow-sm btn-action"
                             style={{ background: mainGreen, color: 'white' }}
-                            onClick={() => navigate(`/evaluate/${teamData.id}`)}
+                            onClick={() => navigate(`/evaluate/${state?.id}`)}
                         >
                             <i className="bi bi-star-fill me-2"></i> تقييم أعضاء الفريق
                         </button>
@@ -160,7 +190,7 @@ export const TeamDetails = () => {
 
                         <hr className="my-4 opacity-25" />
                         <div className="text-center">
-                            <small className="text-muted small">تاريخ الإنشاء: {teamData.createdAt}</small>
+                            <small className="text-muted small">تاريخ الإنشاء: {state?.createdAt}</small>
                         </div>
                     </div>
                 </div>
