@@ -1,47 +1,58 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
-
+import { apiFetch } from '../api';
 import { useAuth } from '../context/AuthContext'; 
 
 export const Dashboard = () => {
     const navigate = useNavigate();
-    
-    const { isLoggedIn } = useAuth(); 
-    
+    const [competitions, setCompetitions] = React.useState([]);
+   const [loading, setLoading] = React.useState(false);
+     const { user, token } = useAuth();
+           const isLoggedIn = !!token;
+        const baseUrl = import.meta.env.VITE_API_BASE_URL;
     const mainGreen = '#1a5d44'; 
 
-    const upcoming = [
-        { 
-            id: 1, 
-            title: "المسابقة الوطنية للأمن السيبراني", 
-            date: "10 يونيو 2024", 
-            category: "تكنولوجيا المعلومات", 
-            required: "فريق من 3-4 طلاب", 
-            tags: ["Networking", "CyberSecurity"],
-            organizer: "كلية تكنولوجيا المعلومات"
-        },
-        { 
-            id: 2, 
-            title: "منتدى الابتكار اللوجستي والأعمال", 
-            date: "15 يونيو 2024", 
-            category: "إدارة الأعمال", 
-            required: "فريق من طالبين", 
-            tags: ["Logistics", "Business"],
-            organizer: "كلية الأعمال"
-        },
-        { 
-            id: 3, 
-            title: "هاكاثون البرمجيات الذكية", 
-            date: "20 يونيو 2024", 
-            category: "هندسة البرمجيات", 
-            required: "فريق من 5 طلاب", 
-            tags: ["AI", "Development"],
-            organizer: "مركز الريادة"
-        }
-    ];
+ React.useEffect(() => {
+    const fetchCompetitions = async () => {
+        setLoading(true);
 
+        try {
+            const res = await apiFetch(`${baseUrl}api/Posts/GetAllProject`, {
+                method: "GET",
+                headers: {
+                    "Accept": "*/*"
+                }
+            });
+
+            const data = await res.json();
+
+const formatted = data.map(comp => ({
+    id: comp.projectID,
+    title: comp.name,
+    description: comp.descriptions,
+    rating: comp.rating,
+    isGraduation: comp.isGraduationProject,
+    endDate: comp.endDate,
+    skills: comp.skills,
+    availableSeats: comp.numberOfAvailableSeats,
+    location: comp.projectLocation,
+    teamType: comp.teamType
+}));
+
+            setCompetitions(formatted);
+
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    fetchCompetitions();
+}, []);
     const handleJoinClick = (id) => {
+        // التحقق الآن يعتمد على الـ Context
         if (!isLoggedIn) {
             Swal.fire({
                 title: '<span style="font-family: Cairo">خطوة واحدة تفصلك!</span>',
@@ -60,7 +71,7 @@ export const Dashboard = () => {
                 }
             });
         } else {
-            navigate(`/competition/${id}`);
+          navigate(`/competition/${id}`);
         }
     };
 
@@ -159,7 +170,7 @@ export const Dashboard = () => {
                                         <button className="btn-prime shadow-sm" onClick={() => navigate('/login')}>
                                             تسجيل الدخول
                                         </button>
-                                        <button className="btn-ghost" onClick={() => navigate('/setup-profile')}>
+                                        <button className="btn-ghost" onClick={() => navigate('/verify-email')}>
                                             انضم إلينا الآن
                                         </button>
                                     </>
@@ -173,13 +184,13 @@ export const Dashboard = () => {
             <div className="container py-5 mt-4">
                 <h3 className="fw-bold mb-4" style={{borderRight: `4px solid ${mainGreen}`, paddingRight: '15px'}}>المسابقات المتاحة</h3>
                 <div className="row g-4">
-                    {upcoming.map(comp => (
+                   {competitions.map(comp => (
                         <div key={comp.id} className="col-12">
                             <div className="comp-row d-md-flex align-items-center justify-content-between">
                                 <div className="d-flex align-items-center gap-4">
                                     <div className="d-none d-md-block text-center border-start ps-4" style={{minWidth: '90px'}}>
-                                        <h3 className="mb-0 fw-bold text-success">{comp.date.split(' ')[0]}</h3>
-                                        <div className="text-muted small">{comp.date.split(' ')[1]}</div>
+                                        <h3 className="mb-0 fw-bold text-success">{comp.endDate ? new Date(comp.endDate).toLocaleDateString(): "لا يوجد تاريخ"}</h3>
+                                        <div className="text-muted small"></div>
                                     </div>
                                     <div>
                                         <div className="d-flex align-items-center gap-2 mb-1">
@@ -188,7 +199,7 @@ export const Dashboard = () => {
                                         <h5 className="fw-bold mb-1">{comp.title}</h5>
                                         <div className="text-muted small fw-bold">
                                             <i className="bi bi-people-fill ms-1"></i> {comp.required}
-                                        </div>ّ
+                                        </div>
                                     </div>
                                 </div>
                                 <div className="mt-3 mt-md-0 d-flex gap-2">
@@ -200,7 +211,7 @@ export const Dashboard = () => {
                                     </button>
                                     <button 
                                         className="btn-prime btn-sm px-3" 
-                                        onClick={() => handleJoinClick(comp.id)}
+                                      onClick={() => handleJoinClick(comp.id)}
                                     >
                                         انضمام للفريق
                                     </button>
