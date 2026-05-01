@@ -1,6 +1,7 @@
 import { useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
+import { apiFetch } from '../api';
 export const CompetitionsPage = () => {
     const [mainTab, setMainTab] = useState('الكل'); 
     const [categoryFilter, setCategoryFilter] = useState('الكل');
@@ -11,20 +12,23 @@ export const CompetitionsPage = () => {
     
     const mainGreen = '#1a5d44';
     const accentGold = '#c5a059';
-
+    const baseUrl = import.meta.env.VITE_API_BASE_URL;
 
                 const [allData, setAllData] = useState([]);
 
 
 
 
-                        useEffect(() => {
-                    fetch("https://localhost:7011/api/Posts/GetAllProject")
-                        .then(res => res.json())
-                        .then(data => setAllData(data))
-                        .catch(err => console.log(err));
-                }, []);
-
+               useEffect(() => {
+    apiFetch(`${baseUrl}api/Posts/GetAllProject`, {
+        headers: {
+            "ngrok-skip-browser-warning": "true"
+        }
+    })
+    .then(res => res.json())
+    .then(data => setAllData(data))
+    .catch(err => console.log(err));
+}, []);
 const filteredResults = allData.filter(item => {
 
     const matchesTab =
