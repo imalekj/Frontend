@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
-
+import { apiFetch } from '../api';
 import { useAuth } from '../context/AuthContext'; 
 
 export const RequestsPage = () => {
@@ -9,94 +9,204 @@ export const RequestsPage = () => {
     const navigate = useNavigate();
     const mainGreen = '#1a5d44';
 
-    
-    const { isLoggedIn, user } = useAuth();
-
-    
-    const [requests, setRequests] = useState([
-        { 
-            id: 101, 
-            name: "سارة محمود", 
-            major: "هندسة البرمجيات", 
-            year: "سنة رابعة",
-            avatar: "", 
-            skills: ["React", "UI/UX", "Figma"],
-            message: "أريد الانضمام كـ Frontend Developer، لدي خبرة في مشاريع سابقة.",
-            status: "pending"
-        },
-        { 
-            id: 102, 
-            name: "محمد عبدالله", 
-            major: "علم الحاسوب", 
-            year: "سنة ثالثة",
-            avatar: "", 
-            skills: ["Node.js", "Python", "SQL"],
-            message: "مهتم بالعمل على الـ Backend وتصميم قواعد البيانات.",
-            status: "pending"
-        }
-    ]);
-
-    // حماية الصفحة: إذا لم يكن مسجلاً، يتم تحويله
-    useEffect(() => {
-        if (!isLoggedIn) {
-            navigate('/login');
-        }
-    }, [isLoggedIn, navigate]);
-
-    const handleAction = async (request, action) => {
-        const isAccept = action === 'accept';
+    const baseUrl = import.meta.env.VITE_API_BASE_URL;
+    const { user, token } = useAuth();
+    const isLoggedIn = !!token;
         
-        const result = await Swal.fire({
-            title: isAccept ? 'تأكيد القبول' : 'تأكيد الرفض',
-            text: isAccept 
-                ? `هل أنت متأكد من إضافة ${request.name} لفريقك؟` 
-                : `سيتم حذف طلب ${request.name} ولن يتمكن من الانضمام حالياً.`,
-            icon: isAccept ? 'question' : 'warning',
-            showCancelButton: true,
-            confirmButtonColor: isAccept ? mainGreen : '#d33',
-            cancelButtonColor: '#64748b',
-            confirmButtonText: isAccept ? 'نعم، أضفه للفريق' : 'نعم، رفض الطلب',
-            cancelButtonText: 'إلغاء',
-            reverseButtons: true,
-            customClass: {
-                popup: 'rounded-5',
-                title: 'fw-bold',
-            }
-        });
 
-        if (result.isConfirmed) {
-            Swal.fire({
-                title: isAccept ? 'جاري القبول...' : 'جاري المعالجة...',
-                allowOutsideClick: false,
-                didOpen: () => {
-                    Swal.showLoading();
+    
+ const [requests, setRequests] = useState([]);
+const [loading, setLoading] = useState(true);
+
+useEffect(() => {
+    if (!isLoggedIn) {
+        navigate('/login');
+        return;
+    }
+
+    const fetchRequests = async () => {
+        try {
+            setLoading(true);
+
+            const response = await apiFetch(
+                `${baseUrl}api/PostRequests/GetAllRequestsByProjectID?ProjectID=${id}`,
+                {
+                    method: 'GET',
+                    headers: {
+                        'accept': '*/*',
+                        'Authorization': `Bearer ${token}` // إذا عندك توكن
+                    }
                 }
+            );
+
+            if (!response.ok) {
+                throw new Error("فشل في جلب البيانات");
+            }
+
+            const data = await response.json();
+                console.log(data);
+            // إذا الـ API يرجع list مباشرة
+setRequests(
+    data.map(item => ({
+       userId: item.id, // فقط للعرض
+        participationID: item.participationID, // 🔥 هذا المهم
+        name: item.fullName,
+        avatar: item.imagePath
+            ? `https://localhost:7011${item.imagePath}`
+            : null,
+        major: "غير محدد",
+        skills: [],
+        message: "لا يوجد رسالة"
+    }))
+);
+
+        } catch (error) {
+            console.error(error);
+
+            Swal.fire({
+                icon: 'error',
+                title: 'خطأ',
+                text: 'حدث خطأ أثناء جلب الطلبات'
             });
 
-            // محاكاة الاتصال بالسيرفر
-            setTimeout(() => {
-                setRequests(prev => prev.filter(req => req.id !== request.id));
-                
-                Swal.fire({
-                    title: isAccept ? 'تمت الإضافة!' : 'تم الرفض',
-                    text: isAccept 
-                        ? `أصبح ${request.name} الآن عضواً في فريقك.` 
-                        : 'تم استبعاد الطلب من القائمة بنجاح.',
-                    icon: 'success',
-                    timer: 2000,
-                    showConfirmButton: false,
-                    customClass: {
-                        popup: 'rounded-4 border-bottom border-5 ' + (isAccept ? 'border-success' : 'border-danger')
-                    }
-                });
-            }, 1000);
+        } finally {
+            setLoading(false);
         }
     };
+        
+    fetchRequests();
+}, [id, isLoggedIn, navigate, token]);
+const handleAction = async (request, action) => {
+    const isAccept = action === 'accept';
+
+    const result = await Swal.fire({
+        title: isAccept ? 'تأكيد القبول' : 'تأكيد الرفض',
+        text: isAccept
+            ? `هل أنت متأكد من إضافة ${request.name}؟`
+            : `هل تريد رفض ${request.name}؟`,
+        icon: isAccept ? 'question' : 'warning',
+        showCancelButton: true,
+        confirmButtonColor: isAccept ? mainGreen : '#d33',
+        cancelButtonColor: '#64748b',
+        confirmButtonText: isAccept ? 'قبول' : 'رفض',
+        cancelButtonText: 'إلغاء',
+    });
+
+    if (!result.isConfirmed) return;
+
+    try {
+        Swal.fire({
+            title: 'جاري المعالجة...',
+            allowOutsideClick: false,
+            didOpen: () => Swal.showLoading(),
+        });
+
+        // =========================
+        // ✔ 1. قبول الطلب (Subscribe)
+        // =========================
+        if (isAccept) {
+                const subscribeRes = await apiFetch(
+                `${baseUrl}api/PostRequests/subscribeToProject?Projectid=${id}&userId=${request.userId}`,
+                {
+                    method: 'POST',
+                    headers: {
+                        accept: '*/*',
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+
+            if (!subscribeRes.ok) throw new Error('Subscribe failed');
+
+            // =========================
+            // ✔ 2. تحديث الحالة
+            // =========================
+            const statusRes = await apiFetch(
+                `${baseUrl}api/PostRequests/UpdateStatus`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({
+                       participationID: request.participationID,
+                        status: 2
+                    })
+                }
+            );
+
+            if (!statusRes.ok) throw new Error('Status update failed');
+
+            // =========================
+            // ✔ 3. تحديث UI
+            // =========================
+            setRequests(prev =>
+                prev.map(req =>
+                    req.participationID === request.participationID
+                        ? { ...req, status: 2 }
+                        : req
+                )
+            );
+
+            Swal.fire({
+                icon: 'success',
+                title: 'تم القبول',
+                timer: 1500,
+                showConfirmButton: false,
+            });
+
+        } else {
+            // =========================
+            // ❌ رفض فقط تحديث حالة
+            // =========================
+            const statusRes = await apiFetch(
+                `${baseUrl}api/PostRequests/UpdateStatus`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({
+                        participationID: request.participationID,
+                        status: 1
+                    })
+                }
+            );
+
+            if (!statusRes.ok) throw new Error();
+
+            setRequests(prev =>
+                prev.map(req =>
+                   req.participationID !== request.participationID
+                        ? { ...req, status: 1}
+                        : req
+                )
+            );
+
+            Swal.fire({
+                icon: 'info',
+                title: 'تم الرفض',
+                timer: 1500,
+                showConfirmButton: false,
+            });
+        }
+
+    } catch (error) {
+        Swal.fire({
+            icon: 'error',
+            title: 'خطأ',
+            text: 'حدث خطأ أثناء العملية',
+        });
+    }
+    
+};
 
     const getDefaultAvatar = (seed) => `https://api.dicebear.com/7.x/identicon/svg?seed=${seed}`;
 
     if (!isLoggedIn) return null;
-
+        
     return (
         <div className="container py-5 min-vh-100" dir="rtl" style={{ fontFamily: 'Cairo, sans-serif' }}>
             <style>
@@ -126,7 +236,7 @@ export const RequestsPage = () => {
             <div className="row g-4">
                 {requests.length > 0 ? (
                     requests.map((req, index) => (
-                        <div className="col-12 animate__animated animate__fadeInUp" style={{ animationDelay: `${index * 0.1}s` }} key={req.id}>
+                        <div className="col-12 animate__animated animate__fadeInUp" style={{ animationDelay: `${index * 0.1}s` }} key={req.participationID} >
                             <div className="card request-card shadow-sm p-4 bg-white border-0">
                                 <div className="row align-items-center">
                                     <div className="col-lg-4 d-flex align-items-center gap-3">
@@ -158,7 +268,7 @@ export const RequestsPage = () => {
                                     <div className="col-lg-3">
                                         <div className="d-flex justify-content-lg-end gap-2">
                                             <button 
-                                                onClick={() => handleAction(req, 'accept')}
+                                             onClick={() => handleAction(req, 'accept')}
                                                 className="btn btn-success rounded-4 px-3 fw-bold flex-grow-1 shadow-sm border-0"
                                                 style={{ background: mainGreen }}
                                             >
