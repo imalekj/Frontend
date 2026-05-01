@@ -2,9 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import { useAuth } from '../context/AuthContext'; 
+import { apiFetch } from '../api';
 export const MyTeams = () => {
     const navigate = useNavigate();
-    const { user } = useAuth();
+     const { user, token } = useAuth();
+           const isLoggedIn = !!token;
+    const baseUrl = import.meta.env.VITE_API_BASE_URL;
     const mainGreen = '#1a5d44';
 
     const defaultAvatar = "https://static.vecteezy.com/system/resources/thumbnails/009/292/244/small/default-avatar-icon-of-social-media-user-vector.jpg";
@@ -12,37 +15,36 @@ export const MyTeams = () => {
     const [teams, setTeams] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        const fetchTeams = async () => {
-            // التأكد من وجود مستخدم قبل الطلب
-            if (!user?.identifier) return;
+useEffect(() => {
+    const fetchTeams = async () => {
+        if (!token) return;
 
-            try {
-                // 2. استدعاء الـ API الحقيقي (تأكد من المسار الصحيح في مشروعك)
-                const response = await fetch(`https://localhost:7011/api/Teams/GetUserTeams/${user.identifier}`, {
-                    headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`
-                    }
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    setTeams(data);
-                } else {
-                    // في حال فشل الطلب، يمكننا إظهار البيانات التجريبية مؤقتاً أو تنبيه المستخدم
-                    console.error("Failed to fetch teams from server");
+        try {
+            const response = await apiFetch(`${baseUrl}api/Teams/GetUserTeams`, {
+                method: "GET",
+                 headers: {
+                    "Authorization": `Bearer ${token}`,
+                    "Content-Type": "application/json"
                 }
-            } catch (error) {
-                console.error("Connection error:", error);
-                // Swal.fire('خطأ', 'تعذر الاتصال بالخادم لجلب الفرق', 'error');
-            } finally {
-                setLoading(false);
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                setTeams(data);
+            } else {
+                const errorText = await response.text();
+                console.log("API Error:", errorText);
             }
-        };
-
-        fetchTeams();
-    }, [user]);
-
+        } catch (error) {
+            console.log("Connection error:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+      
+    fetchTeams();
+}, [token]);
+  console.log(teams);
     return (
         <div className="container py-4 text-end" dir="rtl" style={{ maxWidth: '900px', fontFamily: 'Cairo, sans-serif' }}>
             <style>
@@ -99,7 +101,7 @@ export const MyTeams = () => {
                     </div>
                 ) : teams.length > 0 ? (
                     teams.map((team) => (
-                        <div className="col-md-6" key={team.id}>
+                        <div className="col-md-6" key={team.Name}>
                             <div className="card team-card shadow-sm h-100">
                                 <div className="d-flex justify-content-between align-items-start mb-3">
                                     <div className="d-flex align-items-center gap-2">
@@ -107,8 +109,8 @@ export const MyTeams = () => {
                                             <i className="bi bi-code-square"></i>
                                         </div>
                                         <div>
-                                            <h6 className="fw-bold mb-0 text-dark">{team.projectName}</h6>
-                                            <small className="text-muted" style={{ fontSize: '0.65rem' }}>كود الفريق: {team.id}</small>
+                                            <h6 className="fw-bold mb-0 text-dark">{team.name}</h6>
+                                            <small className="text-muted" style={{ fontSize: '0.65rem' }}>كود الفريق: {team.projectId}</small>
                                         </div>
                                     </div>
                                     <span className={`status-badge ${team.status === 'active' ? 'bg-success-subtle text-success' : 'bg-light text-secondary'}`}>
@@ -118,7 +120,7 @@ export const MyTeams = () => {
 
                                 <div className="mb-3">
                                     <div className="small mb-2 text-secondary">
-                                        <i className="bi bi-trophy-fill text-warning ms-1"></i> {team.contestName}
+                                        <i className="bi bi-trophy-fill text-warning ms-1"></i> {team.rating}
                                     </div>
 
                                     <div className="d-flex justify-content-between align-items-center">
@@ -127,7 +129,7 @@ export const MyTeams = () => {
                                         </div>
                                         <div className="d-flex align-items-center">
                                             {/* محاكاة عرض الأعضاء بناءً على عددهم */}
-                                            {[...Array(Math.min(team.membersCount, 4))].map((_, i) => (
+                                            {[...Array(Math.min(Number(team.availableSeats  || 0), 4))].map((_, i) => (
                                                 <img
                                                     key={i}
                                                     src={defaultAvatar}
@@ -137,7 +139,7 @@ export const MyTeams = () => {
                                             ))}
                                             {team.membersCount > 0 && (
                                                 <span className="small text-muted me-2" style={{ fontSize: '0.7rem' }}>
-                                                    {team.membersCount} أعضاء
+                                                    {team.availableSeats} أعضاء
                                                 </span>
                                             )}
                                         </div>
@@ -145,17 +147,21 @@ export const MyTeams = () => {
                                 </div>
 
                                 <div className="pt-2 border-top d-flex justify-content-between align-items-center">
-                                    <span className="text-muted" style={{ fontSize: '0.7rem' }}>آخر تحديث: {team.lastUpdate}</span>
+                                    <span className="text-muted" style={{ fontSize: '0.7rem' }}>آخر تحديث: {new Date(team.updatedAt).toLocaleDateString()}</span>
                                     <div className="d-flex gap-2">
                                         <button
-                                            onClick={() => navigate(`/team-details/${team.id}`)}
+                                          onClick={() =>
+                                                        navigate(`/team-details/${team.projectId || team.ProjectId}`, {
+                                                            state: team
+                                                        })
+                                                        }
                                             className="btn btn-light btn-action-sm border shadow-sm"
                                         >
                                             <i className="bi bi-info-circle me-1"></i> التفاصيل
                                         </button>
                                         {team.isSubmitted && (
                                             <button
-                                                onClick={() => navigate(`/evaluate/${team.id}`)}
+                                                onClick={() => navigate(`/evaluate/${team.ProjectId}`)}
                                                 className="btn btn-warning btn-action-sm shadow-sm"
                                             >
                                                 تقييم الفريق
