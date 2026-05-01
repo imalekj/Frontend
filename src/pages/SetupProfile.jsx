@@ -3,12 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import toast, { Toaster } from 'react-hot-toast';
 import Swal from 'sweetalert2';
 import { useAuth } from '../context/AuthContext'; 
-
+import { apiFetch } from '../api';
 export const SetupProfile = () => {
     const navigate = useNavigate();
     const { login } = useAuth(); 
     const mainGreen = '#1a5d44'; 
-
+    const baseUrl = import.meta.env.VITE_API_BASE_URL;
     const [step, setStep] = useState(1);
     const [loading, setLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
@@ -156,7 +156,7 @@ export const SetupProfile = () => {
             formDataToSend.append("ProfileImage", formData.profileImage);
         }
 
-        const response = await fetch("https://localhost:7011/api/Login/Register", {
+        const response = await apiFetch(`${baseUrl}api/Login/Register`, {
             method: "POST",
             body: formDataToSend
         });
