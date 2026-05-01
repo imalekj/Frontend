@@ -10,7 +10,7 @@ export const Login = () => {
     const { login } = useAuth(); 
     
     const mainGreen = '#1a5d44';
-
+    const baseUrl = import.meta.env.VITE_API_BASE_URL;
     const [credentials, setCredentials] = useState({ identifier: '', password: '' });
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
@@ -23,26 +23,25 @@ export const Login = () => {
         e.preventDefault();
         setIsLoading(true);
 
+   
+        
         try {
-            const response = await fetch("https://localhost:7011/api/Login/login", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    identifier: credentials.identifier,
-                    password: credentials.password
-                })
-            });
+    const response = await fetch(`${baseUrl}api/Login/login`, {
+    method: "POST",
+    headers: {
+        "Content-Type": "application/json",
+        "ngrok-skip-browser-warning": "true"  // ← أضف هذا
+    },
+    body: JSON.stringify({
+        identifier: credentials.identifier,
+        password: credentials.password
+    })
+});
 
             const data = await response.json();
            
             if (response.ok) {
-               login(
-                        data.token,    // التوكن
-                        data.user      // بيانات المستخدم (identifier, fullName, ... )
-                    );               
-                
+          
                 login(data.token, data.user); 
                 Swal.fire({
                     title: 'أهلاً بك مجدداً!',
