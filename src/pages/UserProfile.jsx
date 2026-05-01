@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext'; 
-
+import { apiFetch } from '../api';
 export const UserProfile = () => {
     const { userId } = useParams();
     const navigate = useNavigate();
@@ -10,7 +10,7 @@ export const UserProfile = () => {
 
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
-
+    const baseUrl = import.meta.env.VITE_API_BASE_URL;
     
     const isOwnProfile = currentUser?.id === parseInt(userId) || currentUser?.id === userId;
 
@@ -20,7 +20,7 @@ export const UserProfile = () => {
             setLoading(true);
 
             // استدعاء الـ API
-            const response = await fetch(`https://localhost:7011/api/Login/GetUserInfo/${userId}`);
+            const response = await apiFetch(`${baseUrl}api/Login/GetUserInfo/${userId}`);
             
             if (!response.ok) {
                 throw new Error("فشل في جلب البيانات");
