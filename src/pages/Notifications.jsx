@@ -3,12 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 import { useAuth } from '../context/AuthContext';
-
+import { apiFetch } from '../api';
 export const Notifications = () => {
     const navigate = useNavigate();
-    const { user } = useAuth();
+     const { user, token } = useAuth();
+           const isLoggedIn = !!token;
     const mainGreen = '#1a5d44';
-    
+    const baseUrl = import.meta.env.VITE_API_BASE_URL;
     const [filter, setFilter] = useState('all');
     const [notifications, setNotifications] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -19,7 +20,7 @@ export const Notifications = () => {
             if (!user?.identifier) return;
             try {
                 // استبدل المسار بالـ API الحقيقي الخاص بك
-                const response = await fetch(`https://localhost:7011/api/Notifications/GetUserNotifications/${user.identifier}`, {
+                const response = await fetch(`${baseUrl}api/Notifications/GetUserNotifications/${user.identifier}`, {
                     headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
                 });
                 if (response.ok) {
@@ -54,7 +55,7 @@ export const Notifications = () => {
     // 3. تحديث حالة التنبيه كـ "مقروء" في السيرفر
     const markAsRead = async (id) => {
         try {
-            await fetch(`https://localhost:7011/api/Notifications/MarkAsRead/${id}`, {
+            await fetch(`${baseUrl}api/Notifications/MarkAsRead/${id}`, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
             });
@@ -78,7 +79,7 @@ export const Notifications = () => {
             if (result.isConfirmed) {
                 try {
                     // طلب الحذف من السيرفر
-                    await fetch(`https://localhost:7011/api/Notifications/Delete/${id}`, {
+                    await fetch(`${baseUrl}api/Notifications/Delete/${id}`, {
                         method: 'DELETE',
                         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
                     });
@@ -103,7 +104,7 @@ export const Notifications = () => {
         if (notifications.every(n => n.isRead)) return;
 
         try {
-            await fetch(`https://localhost:7011/api/Notifications/MarkAllRead/${user.identifier}`, {
+            await apiFetch(`${baseUrl}api/Notifications/MarkAllRead/${user.identifier}`, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
             });
