@@ -1,16 +1,14 @@
 import React, { useState, useEffect, useRef, useContext } from 'react';
-import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import zujLogo from '../assets/logo.png';
 import { AuthContext } from '../context/AuthContext';
 
 export const Chat = () => {
-    const navigate = useNavigate();
+  
     const scrollRef = useRef(null);
     const mainGreen = '#1a5d44';
-
-    const { isLoggedIn } = useContext(AuthContext); 
-    
+  
+    const baseUrl = import.meta.env.VITE_API_BASE_URL;
     const [view, setView] = useState('inbox');
     const [activeChat, setActiveChat] = useState(null);
     const [newMessage, setNewMessage] = useState("");
@@ -29,12 +27,7 @@ export const Chat = () => {
         { id: 3, name: "ديما علي", status: "نشط منذ 5 دقائق", avatar: "Dima", online: false, type: 'individual' }
     ]);
 
-    // 4. تعديل شرط الحماية (Protection)
-    useEffect(() => {
-        if (!isLoggedIn) {
-            navigate('/'); // تحويل المستخدم إذا لم يسجل الدخول
-        }
-    }, [isLoggedIn, navigate]);
+
 
     useEffect(() => {
         if (activeChat && activeChat.type === 'individual') {
@@ -100,8 +93,6 @@ export const Chat = () => {
         });
     };
 
-    // 5. منع عرض الصفحة تماماً إذا لم يكن مسجلاً
-    if (!isLoggedIn) return null;
 
     return (
         <div className="container py-4 text-end" dir="rtl" style={{ fontFamily: 'Cairo, sans-serif' }}>
