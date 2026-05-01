@@ -1,4 +1,4 @@
-
+import { apiFetch } from '../api';
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import { useAuth } from '../context/AuthContext';
@@ -6,7 +6,7 @@ import React, { useEffect, useState } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
 export const TeamDetails = () => {
     const navigate = useNavigate();
-    const { user } = useAuth(); 
+    const baseUrl = import.meta.env.VITE_API_BASE_URL;
     const mainGreen = '#1a5d44';
     const [members, setMembers] = useState([]);
 
@@ -14,14 +14,17 @@ export const TeamDetails = () => {
     const { teamId } = useParams();
     const [team, setTeam] = useState(state || null);
     const [count, setCount] = useState(0);
-
+   const { user, token } = useAuth();
 useEffect(() => {
     const fetchMembers = async () => {
         try {
-          const res = await fetch(
-    `https://localhost:7011/api/Teams/GetAllTeamMembersByProjectId?ProjectId=${teamId}`,
+          const res = await apiFetch(
+    `${baseUrl}api/Teams/GetAllTeamMembersByProjectId?ProjectId=${teamId}`,
     {
-        method: "POST"
+          method: "GET",
+        headers: {
+            "Authorization": `Bearer ${token}`
+        }
     }
 );
                     if (!res.ok) {
@@ -46,33 +49,57 @@ useEffect(() => {
 
     const getDefaultAvatar = (seed) => `https://api.dicebear.com/7.x/identicon/svg?seed=${seed}`;
 
-    const handleLeaveTeam = () => {
-        if (isCurrentUserOwner) {
-            return Swal.fire('تنبيه', 'لا يمكن لقائد الفريق المغادرة قبل تعيين قائد جديد أو حذف الفريق.', 'info');
-        }
+const handleLeaveTeam = () => {
+    if (isCurrentUserOwner) {
+        return Swal.fire(
+            'تنبيه',
+            'لا يمكن لقائد الفريق المغادرة قبل تعيين قائد جديد أو حذف الفريق.',
+            'info'
+        );
+    }
 
-        Swal.fire({
-            title: 'هل أنت متأكد؟',
-            text: "لن تتمكن من الوصول إلى ملفات الفريق بعد المغادرة!",
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#d33',
-            cancelButtonColor: mainGreen,
-            confirmButtonText: 'نعم، غادر الفريق',
-            cancelButtonText: ' إلغاء',
-            reverseButtons: true
-        }).then((result) => {
-            if (result.isConfirmed) {
+    Swal.fire({
+        title: 'هل أنت متأكد؟',
+        text: "لن تتمكن من الوصول إلى ملفات الفريق بعد المغادرة!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: mainGreen,
+        confirmButtonText: 'نعم، غادر الفريق',
+        cancelButtonText: 'إلغاء',
+        reverseButtons: true
+    }).then(async (result) => {
+        if (result.isConfirmed) {
+            try {
+                const res = await apiFetch(
+                    `${baseUrl}api/PostRequests/UnsubscribeToProject?Projectid=${state?.projectId}`,
+                    {
+                        method: "DELETE",
+                        headers: {
+                            "Authorization": `Bearer ${token}`
+                        }
+                    }
+                );
+
+                if (!res.ok) {
+                    throw new Error("Failed to leave team");
+                }
+
                 Swal.fire(
                     'تمت المغادرة!',
                     'لقد خرجت من الفريق بنجاح.',
                     'success'
                 );
-                navigate('/my-teams');
-            }
-        });
-    };
 
+                navigate('/my-teams');
+
+            } catch (error) {
+                console.error(error);
+                Swal.fire('خطأ', 'لم يتم مغادرة الفريق', 'error');
+            }
+        }
+    });
+};
     return (
         <div className="container py-5 text-end" dir="rtl" style={{ fontFamily: 'Cairo, sans-serif' }}>
 
@@ -167,7 +194,7 @@ useEffect(() => {
                         <button
                             className="btn w-100 py-3 mb-3 fw-bold shadow-sm btn-action text-white"
                             style={{ background: '#2c3e50' }}
-                            onClick={() => navigate(`/todo-list/${state?.id}`)}
+                            onClick={() => navigate(`/todo-list/${state?.projectId}`)}
                         >
                             <i className="bi bi-check2-square me-2"></i> قائمة مهام الفريق
                         </button>
@@ -175,7 +202,7 @@ useEffect(() => {
                         <button
                             className="btn w-100 py-3 mb-3 fw-bold shadow-sm btn-action"
                             style={{ background: mainGreen, color: 'white' }}
-                            onClick={() => navigate(`/evaluate/${state?.id}`)}
+                            onClick={() => navigate(`/evaluate/${state?.projectId}`, {state: members})}
                         >
                             <i className="bi bi-star-fill me-2"></i> تقييم أعضاء الفريق
                         </button>
