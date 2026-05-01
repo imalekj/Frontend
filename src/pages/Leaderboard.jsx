@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-
+import { apiFetch } from '../api';
 import { useAuth } from '../context/AuthContext'; 
 
 export const Leaderboard = () => {
     const navigate = useNavigate();
     // 2. جلب حالة المستخدم الحالي
-    const { user, isLoggedIn } = useAuth(); 
-    
+    const { user, token } = useAuth();
+          const isLoggedIn = !!token;
+    const baseUrl = import.meta.env.VITE_API_BASE_URL;
     const [activeTab, setActiveTab] = useState('students');
     const mainGreen = '#1a5d44';
     const accentGold = '#FFD700';
