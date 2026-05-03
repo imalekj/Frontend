@@ -2,60 +2,66 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import toast, { Toaster } from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext'; 
-
+import { apiFetch } from '../api';
 export const TodoListPage = () => {
-    const { teamId } = useParams(); 
+    const { teamId: ProjectId } = useParams(); 
     const navigate = useNavigate();
     const { user } = useAuth(); 
     const mainGreen = '#1a5d44';
-    
+    const baseUrl = import.meta.env.VITE_API_BASE_URL;
     const [tasks, setTasks] = useState([]);
     const [newTask, setNewTask] = useState('');
     const [loading, setLoading] = useState(false);
 
     const isOwner = user?.role === 'admin' || user?.id === 101; 
 
-    const fetchTeamTasks = async () => {
-        setLoading(true);
-        try {
-            // محاكاة جلب البيانات من API
-            setTimeout(() => {
-                const mockTasks = [
-                    { id: 1, text: 'تحليل المتطلبات النهائية للمشروع', completed: true },
-                    { id: 2, text: 'تصميم واجهة المستخدم (Figma)', completed: false },
-                    { id: 3, text: 'إعداد قاعدة بيانات MySQL', completed: false },
-                ];
-                setTasks(mockTasks);
-                setLoading(false);
-                toast.success('تم تحديث قائمة المهام');
-            }, 800);
-        } catch (error) {
-            toast.error('حدث خطأ أثناء جلب البيانات');
-            setLoading(false);
-        }
-    };
+   
+const fetchTasks = async () => {
+    setLoading(true);
 
-    useEffect(() => {
-        fetchTeamTasks();
-    }, [teamId]);
+    try {
+        const res = await apiFetch(
+            `${baseUrl}api/Teams/GetAllTaskByProjectId?ProjectId=${ProjectId}`)
 
-    const addTask = (e) => {
-        e.preventDefault();
-        
-        // تم إزالة شرط (if (!isOwner)) للسماح لجميع الأعضاء
-        if (!newTask.trim()) return;
-        
-        const task = { 
-            id: Date.now(), 
-            text: newTask, 
-            completed: false,
-            addedBy: user?.name || 'عضو الفريق' // إضافة اسم الشخص الذي أضاف المهمة (اختياري)
-        };
-        
-        setTasks([task, ...tasks]);
-        setNewTask('');
-        toast.success('تمت إضافة المهمة بواسطة ' + (user?.name || 'عضو'));
-    };
+        const data = await res.json();
+
+        const formattedTasks = data.map(task => ({
+            id: task.taskid,
+            text: task.taskName,
+            completed: task.isDone,
+            description: task.description,
+            projectId: task.projectID
+        }));
+
+        setTasks(formattedTasks);
+
+    } catch (err) {
+        console.error(err);
+    } finally {
+        setLoading(false);
+    }
+};
+useEffect(() => {
+    if (ProjectId) {
+        fetchTasks();
+    }
+}, [ProjectId]);
+
+const addTask = async (e) => {
+    e.preventDefault();
+
+    if (!newTask.trim()) return;
+
+    try {
+        await apiFetch(`${baseUrl}api/Teams/addTaskByTeamID`)
+
+
+        setNewTask(''); // تفريغ الحقل
+
+    } catch (err) {
+        console.error(err);
+    }
+};
 
     const toggleComplete = (id) => {
         setTasks(tasks.map(task => 
@@ -63,12 +69,25 @@ export const TodoListPage = () => {
         ));
     };
 
-    const deleteTask = (id) => {
-        // تم إزالة شرط الصلاحية هنا أيضاً للسماح للجميع بالحذف
-        setTasks(tasks.filter(task => task.id !== id));
-        toast.error('تم حذف المهمة');
-    };
+  const deleteTask = async (id) => {
+    try {
+        const res = await apiFetch(`${baseUrl}api/Teams/deleteTaskByTaskID?taskId=${id}`);
+      
 
+        if (!res.ok) {
+            throw new Error("فشل الحذف");
+        }
+
+        // حذف من الواجهة مباشرة (optimistic update)
+        setTasks(prev => prev.filter(task => task.id !== id));
+
+        toast.success('تم حذف المهمة ✅');
+
+    } catch (err) {
+        console.error(err);
+        toast.error('حدث خطأ أثناء الحذف ❌');
+    }
+};
     const completionRate = tasks.length > 0 
         ? Math.round((tasks.filter(t => t.completed).length / tasks.length) * 100) 
         : 0;
@@ -102,10 +121,18 @@ export const TodoListPage = () => {
                             <h2 className="fw-bold mb-1" style={{ color: mainGreen }}>قائمة مهام الفريق المشتركة</h2>
                             <p className="text-muted mb-0 small">بإمكان جميع أعضاء الفريق التعاون في إدارة المهام</p>
                         </div>
-                        <button className="btn-refresh shadow-sm" onClick={fetchTeamTasks} disabled={loading}>
-                            {loading ? <span className="spinner-border spinner-border-sm me-2"></span> : <i className="bi bi-arrow-repeat me-2"></i>}
-                            تحديث البيانات
-                        </button>
+                                <button
+                                        className="btn-refresh shadow-sm"
+                                        onClick={fetchTasks}
+                                        disabled={loading}
+                                    >
+                                        {loading ? (
+                                            <span className="spinner-border spinner-border-sm me-2"></span>
+                                        ) : (
+                                            <i className="bi bi-arrow-repeat me-2"></i>
+                                        )}
+                                        تحديث البيانات
+                                    </button>
                     </div>
                 </div>
 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
-
+import { apiFetch } from '../api';
 import { useAuth } from '../context/AuthContext'; 
 
 export const EditProfile = () => {
@@ -10,8 +10,8 @@ export const EditProfile = () => {
     const { user, login } = useAuth(); 
     
     const mainGreen = '#1a5d44';
+    const baseUrl = import.meta.env.VITE_API_BASE_URL;
 
-    const [imagePreview, setImagePreview] = useState(user?.image || "https://static.vecteezy.com/system/resources/thumbnails/009/292/244/small/default-avatar-icon-of-social-media-user-vector.jpg");
     const [loading, setLoading] = useState(false);
 
     // 3. تهيئة البيانات بناءً على بيانات المستخدم المسجل حالياً
@@ -21,6 +21,31 @@ export const EditProfile = () => {
         githubUrl: user?.githubUrl || "",
         pastProjects: user?.pastProjects || [{ title: "", link: "" }]
     });
+     
+
+
+
+        const defaultImg =
+        "https://static.vecteezy.com/system/resources/thumbnails/009/292/244/small/default-avatar-icon-of-social-media-user-vector.jpg";
+
+        const [imagePreview, setImagePreview] = useState(defaultImg);
+                        useEffect(() => {
+  if (!user?.image) {
+    setImagePreview(defaultImg);
+    return;
+  }
+
+  if (
+    user.image.startsWith("http") ||
+    user.image.startsWith("blob")
+  ) {
+    setImagePreview(user.image);
+  } else {
+    setImagePreview(baseUrl + user.image);
+  }
+}, [user]);
+
+
 
     const handleImageChange = (e) => {
         const file = e.target.files[0];
@@ -110,8 +135,11 @@ export const EditProfile = () => {
 
                         <form onSubmit={handleSave}>
                             <div className="avatar-wrapper mb-5 shadow-sm">
-                                <img src={imagePreview} className="avatar-img shadow-sm" alt="Profile" />
-                                <label htmlFor="img-input" className="upload-badge shadow">
+         <img
+  src={imagePreview}
+  className="avatar-img shadow-sm"
+  alt="Profile"
+/>                           <label htmlFor="img-input" className="upload-badge shadow">
                                     <i className="bi bi-camera-fill"></i>
                                 </label>
                                 <input id="img-input" type="file" hidden onChange={handleImageChange} accept="image/*" />

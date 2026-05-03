@@ -16,49 +16,13 @@ const facultiesData = {
 
 export const SetupProfile = () => {
     const navigate = useNavigate();
-    const mainGreen = '#1a5d44'; 
+    const { login } = useAuth(); 
+    
+    const mainGreen = '#1a5d44';
 
-    const [step, setStep] = useState(1);
-    const [loading, setLoading] = useState(false);
-    const [imagePreview, setImagePreview] = useState(null);
-    const [skillInput, setSkillInput] = useState("");
-
-    const [formData, setFormData] = useState({
-        fullName: '',
-        userName: '',
-        email: '',
-        password: '',
-        role: 'student',
-        faculty: 'كلية تكنولوجيا المعلومات',
-        universityMajor: 'هندسة البرمجيات',
-        workField: '', 
-        githubUrl: '',
-        skills: [],
-        profileImage: null,
-        description: ''
-    });
-
-    // تحديد أيقونة الرابط ديناميكياً
-    const getSocialIcon = (url) => {
-        if (!url) return "bi-link-45deg text-muted";
-        const lowerUrl = url.toLowerCase();
-        if (lowerUrl.includes("github.com")) return "bi-github text-dark";
-        if (lowerUrl.includes("linkedin.com")) return "bi-linkedin text-primary";
-        if (lowerUrl.includes("instagram.com")) return "bi-instagram text-danger";
-        if (lowerUrl.includes("facebook.com")) return "bi-facebook text-primary";
-        if (lowerUrl.includes("youtube.com") || lowerUrl.includes("youtu.be")) return "bi-youtube text-danger";
-        return "bi-globe text-success";
-    };
-
-    // فحص شروط كلمة المرور
-    const validatePassword = (pass) => ({
-        "8 حروف على الأقل": pass.length >= 8,
-        "حرف كبير (A-Z)": /[A-Z]/.test(pass),
-        "رقم واحد (0-9)": /[0-9]/.test(pass),
-        "رمز خاص (#@!)": /[!@#$%^&*]/.test(pass)
-    });
-
-    const passConditions = validatePassword(formData.password);
+    const [credentials, setCredentials] = useState({ identifier: '', password: '' });
+    const [showPassword, setShowPassword] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -74,65 +38,50 @@ export const SetupProfile = () => {
         }));
     };
 
-    const addSkill = (e) => {
-        if (e.key === 'Enter' && skillInput.trim() !== "") {
-            e.preventDefault();
-            if (!formData.skills.includes(skillInput.trim())) {
-                setFormData(prev => ({ ...prev, skills: [...prev.skills, skillInput.trim()] }));
-                setSkillInput("");
-            }
-        }
-    };
-
-    const handleImageChange = (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            setImagePreview(URL.createObjectURL(file));
-            setFormData(prev => ({ ...prev, profileImage: file }));
-        }
-    };
-
-    const nextStep = () => {
-        if (step === 1) {
-            const allValid = Object.values(passConditions).every(Boolean);
-            if (!formData.fullName || !formData.email || !formData.password) return toast.error("يرجى إكمال البيانات الأساسية");
-            if (!allValid) return toast.error("كلمة المرور لا تستوفي الشروط");
-            setStep(2);
-        }
-    };
-
-    const verifyAndSubmit = async (e) => {
-        if (e) e.preventDefault();
-        setLoading(true);
+    const handleLogin = async (e) => {
+        e.preventDefault();
+        setIsLoading(true);
 
         try {
-            const dataToSend = new FormData();
-            Object.keys(formData).forEach(key => {
-                if (key === 'skills') {
-                    dataToSend.append(key, formData[key].join(","));
-                } else {
-                    dataToSend.append(key, formData[key]);
-                }
-            });
-
-            const response = await fetch("https://localhost:7011/api/Login/Register", {
+            const response = await fetch("https://localhost:7011/api/Login/login", {
                 method: "POST",
-                body: dataToSend
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    identifier: credentials.identifier,
+                    password: credentials.password
+                })
             });
 
-            if (!response.ok) throw new Error("حدث خطأ أثناء التسجيل، حاول مرة أخرى");
-
-            Swal.fire({
-                title: 'تم بنجاح!',
-                text: 'أهلاً بك في مجتمع الزيتونة، جاري نقلك لملفك الشخصي...',
-                icon: 'success',
-                timer: 2500,
-                showConfirmButton: false,
-                willClose: () => {
-                    navigate('/profile'); // التوجيه لصفحة الملف الشخصي
-                }
-            });
-
+            const data = await response.json();
+           
+            if (response.ok) {
+               login(
+                        data.token,    // التوكن
+                        data.user      // بيانات المستخدم (identifier, fullName, ... )
+                    );               
+                
+                login(data.token, data.user); 
+                Swal.fire({
+                    title: 'أهلاً بك مجدداً!',
+                    text: 'تم تسجيل الدخول بنجاح',
+                    icon: 'success',
+                    timer: 2000,
+                    showConfirmButton: false,
+                    timerProgressBar: true,
+                    confirmButtonColor: mainGreen
+                }).then(() => {
+                    navigate('/');
+                });
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'خطأ في الدخول',
+                    text: data.message || 'البيانات المدخلة غير صحيحة',
+                    confirmButtonColor: mainGreen
+                });
+            }
         } catch (err) {
             toast.error(err.message);
         } finally {

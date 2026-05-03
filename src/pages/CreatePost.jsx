@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
-
+import { apiFetch } from '../api';
 export const CreatePost = () => {
     const navigate = useNavigate();
     const mainGreen = '#1a5d44';
-    
+    const baseUrl = import.meta.env.VITE_API_BASE_URL;
     const [isAuthorized, setIsAuthorized] = useState(false);
     const [formData, setFormData] = useState({
         title: '',
@@ -76,14 +76,16 @@ const handleSubmit = async (e) => {
             numberOfAvailableSeats: formData.maxMembers
         };
 
-        const response = await fetch("https://localhost:7011/api/Posts/Create", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify(dataToSend)
-        });
+       const token = localStorage.getItem("token");
 
+const response = await apiFetch(`${baseUrl}api/Posts/Create`, {
+    method: "POST",
+    headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+    },
+    body: JSON.stringify(dataToSend)
+});
         if (!response.ok) throw new Error("Request failed");
 
         Swal.fire({

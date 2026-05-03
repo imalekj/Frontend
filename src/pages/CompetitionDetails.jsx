@@ -2,7 +2,7 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import React, { useState, useContext, useEffect } from 'react';
-
+import { apiFetch } from '../api';
 export const CompetitionDetails = () => {
     const { id } = useParams();
     const navigate = useNavigate();
@@ -11,7 +11,7 @@ const [user2, setUser2] = useState(null);
 
 const { user, token } = useAuth();
 const isLoggedIn = !!token;
-
+const baseUrl = import.meta.env.VITE_API_BASE_URL;
 const userData = user; // ✔ بدون parse
 
     const [commentText, setCommentText] = useState("");
@@ -24,10 +24,10 @@ const userData = user; // ✔ بدون parse
 
   const getUserByProject = async (id) => {
     try {
-        const response = await fetch(
-            `https://localhost:7011/api/Posts/GetUserByProjectId?id=${id}`
+        const response = await apiFetch(
+            `${baseUrl}api/Posts/GetUserByProjectId?id=${id}`
         );
-
+        
         return await response.json();
     } catch (error) {
         console.error(error);
@@ -37,7 +37,7 @@ const userData = user; // ✔ بدون parse
 useEffect(() => {
     const fetchData = async () => {
         try {
-            const res = await fetch(`https://localhost:7011/api/Posts/GetProjectById?id=${id}`);
+            const res = await apiFetch(`${baseUrl}api/Posts/GetProjectById?id=${id}`);
             const data = await res.json();
 
             setCompetition(data);
@@ -71,8 +71,18 @@ useEffect(() => {
         setCommentText("");
     };
 
-    const handleApply = () => isLoggedIn ? navigate(`/registration/${id}`) : navigate('/login');
-    const handleManageRequests = () => navigate(`/requests/${id}`);
+const handleApply = () => {
+  if (!competition?.projectID) return;
+
+  if (isLoggedIn) {
+    navigate(`/registration/${competition.projectID}`);
+  } else {
+    navigate('/login');
+  }
+};
+
+    const handleManageRequests = () =>
+ navigate(`/manage-requests/${competition.projectID}`);
     const handleProfileClick = () => navigate(`/profile/${competition.projectID}`);
     const formatDate = (dateString) => {
     if (!dateString) return "";

@@ -2,11 +2,11 @@ import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import { useAuth } from '../context/AuthContext'; 
-
+import { apiFetch } from '../api';
 export const Profile = () => {
     const navigate = useNavigate();
     const mainGreen = '#1a5d44';
-    
+    const baseUrl = import.meta.env.VITE_API_BASE_URL;
     const { user, isLoggedIn, logout } = useAuth();
 
     useEffect(() => {

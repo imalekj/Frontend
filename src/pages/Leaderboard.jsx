@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-
+import { apiFetch } from '../api';
 import { useAuth } from '../context/AuthContext'; 
 
 export const Leaderboard = () => {
     const navigate = useNavigate();
+    // 2. جلب حالة المستخدم الحالي
     const { user, isLoggedIn } = useAuth(); 
     
     const [activeTab, setActiveTab] = useState('students');

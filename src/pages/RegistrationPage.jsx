@@ -2,16 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import Swal from 'sweetalert2'; 
 import toast from 'react-hot-toast';
-
+import { apiFetch } from '../api';
 import { useAuth } from '../context/AuthContext'; 
 
 export const RegistrationPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const mainGreen = '#1a5d44';
-
+    const baseUrl = import.meta.env.VITE_API_BASE_URL;
     // سحب حالة التسجيل وبيانات المستخدم من السياق
-    const { isLoggedIn, user } = useAuth(); 
+const { user, token } = useAuth();
+const isLoggedIn = !!token;
     
     const [regType, setRegType] = useState('individual');
     const [step, setStep] = useState(1);
@@ -37,55 +38,77 @@ export const RegistrationPage = () => {
         });
     };
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        
-        const confirmResult = await Swal.fire({
-            title: 'تأكيد البيانات',
-            html: `أنت على وشك التسجيل كـ <b>${regType === 'individual' ? 'مشارك فردي' : `فريق باسم (${formData.teamName})`}</b>.<br>هل البيانات صحيحة؟`,
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonText: 'نعم، سجلني',
-            cancelButtonText: 'تعديل',
-            confirmButtonColor: mainGreen,
-            cancelButtonColor: '#6e7881',
-            customClass: { popup: 'rounded-5' }
-        });
+ const handleSubmit = async (e) => {
+    e.preventDefault();
 
-        if (!confirmResult.isConfirmed) return;
+    if (!id) {
+        Swal.fire("خطأ", "ProjectId غير موجود", "error");
+        return;
+    }
 
-        setIsSubmitting(true);
-        
+    const confirmResult = await Swal.fire({
+        title: 'تأكيد البيانات',
+        html: `أنت على وشك التسجيل كـ <b>${regType === 'individual' ? 'مشارك فردي' : `فريق باسم (${formData.teamName})`}</b>`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'نعم، سجلني',
+        cancelButtonText: 'تعديل',
+        confirmButtonColor: mainGreen,
+    });
+
+    if (!confirmResult.isConfirmed) return;
+
+    setIsSubmitting(true);
+
+    Swal.fire({
+        title: 'جاري معالجة طلبك...',
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading()
+    });
+
+    try {
+        console.log("ProjectId:", id); // 🔥 للتأكد
+
+        const response = await apiFetch(
+            `${baseUrl}api/PostRequests/SendPostRequestToManager`,
+            {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    projectId: Number(id)
+                })
+            }
+        );
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(errorText || "Request failed");
+        }
+
         Swal.fire({
-            title: 'جاري معالجة طلبك...',
-            allowOutsideClick: false,
-            didOpen: () => {
-                Swal.showLoading();
-            },
-            customClass: { popup: 'rounded-5' }
+            title: 'تم إرسال الطلب بنجاح 🎉',
+            text: 'بانتظار موافقة مدير المشروع',
+            icon: 'success',
+            confirmButtonColor: mainGreen
+        }).then(() => {
+            navigate(`/competition/${id}`);
         });
 
-        // هنا يتم استبدال الـ setTimeout بطلب Axios حقيقي لاحقاً
-        setTimeout(() => {
-            setIsSubmitting(false);
-            
-            Swal.fire({
-                title: 'مبارك، تم قبول تسجيلك!',
-                text: 'أنت الآن جزء من منافسة الهاكاثون. تفقد بريدك الجامعي لمتابعة الخطوات التالية.',
-                icon: 'success',
-                confirmButtonText: 'الذهاب لصفحة المسابقة',
-                confirmButtonColor: mainGreen,
-                allowOutsideClick: false,
-                customClass: {
-                    popup: 'rounded-5 shadow-lg border-bottom border-5 border-success',
-                    title: 'fw-bold text-success',
-                    confirmButton: 'px-5 py-2 rounded-pill'
-                }
-            }).then(() => {
-                navigate(`/competition/${id}`);
-            });
-        }, 2000);
-    };
+    } catch (error) {
+        console.error(error);
+
+        Swal.fire({
+            title: 'خطأ ❌',
+            text: error.message || 'حدث خطأ أثناء إرسال الطلب',
+            icon: 'error'
+        });
+    } finally {
+        setIsSubmitting(false);
+    }
+};
 
     if (!isLoggedIn) return null;
 
