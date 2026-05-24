@@ -12,8 +12,8 @@ export const CreatePost = () => {
         category: 'مسابقة',
         participationType: 'فردي',
         maxMembers: 3,
-        deadline: '', 
-        prize: '', 
+        deadline: '',
+        prize: '',
         location: 'أونلاين',
         content: '',
         skills: '',
@@ -24,7 +24,7 @@ export const CreatePost = () => {
         if (!user) {
             navigate('/login');
         } else {
-            // تصحيح: يجب أن تكون true ليتم عرض المحتوى
+
             setIsAuthorized(true);
         }
     }, [navigate]);
@@ -35,78 +35,78 @@ export const CreatePost = () => {
         { id: 'hack', label: 'هاكاثون', icon: 'code-slash' }
     ];
 
-    // دالة موحدة لتحديث الحالة (توفيراً للكود)
+
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
-const handleSubmit = async (e) => {
-    e.preventDefault();
+    const handleSubmit = async (e) => {
+        e.preventDefault();
 
-    const selectedDate = new Date(formData.deadline);
-    const today = new Date();
-    if (selectedDate < today) {
-        return Swal.fire({
-            icon: 'error',
-            title: 'التاريخ غير منطقي',
-            text: 'يرجى اختيار تاريخ موعد نهائي في المستقبل.',
-            confirmButtonColor: mainGreen,
-        });
-    }
+        const selectedDate = new Date(formData.deadline);
+        const today = new Date();
+        if (selectedDate < today) {
+            return Swal.fire({
+                icon: 'error',
+                title: 'التاريخ غير منطقي',
+                text: 'يرجى اختيار تاريخ موعد نهائي في المستقبل.',
+                confirmButtonColor: mainGreen,
+            });
+        }
 
-    try {
-        Swal.fire({
-            title: 'جاري النشر...',
-            allowOutsideClick: false,
-            didOpen: () => Swal.showLoading(),
-        });
+        try {
+            Swal.fire({
+                title: 'جاري النشر...',
+                allowOutsideClick: false,
+                didOpen: () => Swal.showLoading(),
+            });
 
-        // 🔥 تحويل البيانات للشكل المطلوب للـ C#
-        const dataToSend = {
-            name: formData.title,
-            descriptions: formData.content,
-            rating: "0",
-            isGraduationProject: formData.category === "مشروع",
-            endDate: new Date(formData.deadline).toISOString(),
-            skills: formData.skills,
-            availableSeats: formData.participationType === "فريق" ? formData.maxMembers : 1,
-            projectLocation: formData.location,
-            teamType: formData.participationType,
-            numberOfAvailableSeats: formData.maxMembers
-        };
 
-       const token = localStorage.getItem("token");
+            const dataToSend = {
+                name: formData.title,
+                descriptions: formData.content,
+                rating: "0",
+                isGraduationProject: formData.category === "مشروع",
+                endDate: new Date(formData.deadline).toISOString(),
+                skills: formData.skills,
+                availableSeats: formData.participationType === "فريق" ? formData.maxMembers : 1,
+                projectLocation: formData.location,
+                teamType: formData.participationType,
+                numberOfAvailableSeats: formData.maxMembers
+            };
 
-const response = await apiFetch(`${baseUrl}api/Posts/Create`, {
-    method: "POST",
-    headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`
-    },
-    body: JSON.stringify(dataToSend)
-});
-        if (!response.ok) throw new Error("Request failed");
+            const token = localStorage.getItem("token");
 
-        Swal.fire({
-            icon: 'success',
-            title: 'تم النشر بنجاح!',
-            confirmButtonColor: mainGreen,
-        }).then(() => {
-            navigate('/competitions');
-        });
+            const response = await apiFetch(`${baseUrl}api/Posts/Create`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
+                body: JSON.stringify(dataToSend)
+            });
+            if (!response.ok) throw new Error("Request failed");
 
-    } catch (error) {
-        console.error(error);
+            Swal.fire({
+                icon: 'success',
+                title: 'تم النشر بنجاح!',
+                confirmButtonColor: mainGreen,
+            }).then(() => {
+                navigate('/competitions');
+            });
 
-        Swal.fire({
-            icon: 'error',
-            title: 'فشل النشر',
-            text: 'حدث خطأ أثناء إرسال البيانات',
-            confirmButtonColor: mainGreen,
-        });
-    }
-};
+        } catch (error) {
+            console.error(error);
+
+            Swal.fire({
+                icon: 'error',
+                title: 'فشل النشر',
+                text: 'حدث خطأ أثناء إرسال البيانات',
+                confirmButtonColor: mainGreen,
+            });
+        }
+    };
 
     const handleCancel = () => {
         if (formData.title || formData.content) {
@@ -167,9 +167,9 @@ const response = await apiFetch(`${baseUrl}api/Posts/Create`, {
                             <label className="form-label">نوع المنشور</label>
                             <div className="d-flex gap-2">
                                 {categories.map((cat) => (
-                                    <div key={cat.id} 
+                                    <div key={cat.id}
                                         className={`category-btn ${formData.category === cat.label ? 'active' : ''}`}
-                                        onClick={() => setFormData({...formData, category: cat.label})}>
+                                        onClick={() => setFormData({ ...formData, category: cat.label })}>
                                         <i className={`bi bi-${cat.icon} d-block mb-1 fs-6`}></i>
                                         <span className="fw-bold">{cat.label}</span>
                                     </div>
@@ -180,13 +180,13 @@ const response = await apiFetch(`${baseUrl}api/Posts/Create`, {
                         <div className="row g-2">
                             <div className="col-12">
                                 <label className="form-label">العنوان الرئيسي</label>
-                                <input name="title" type="text" className="form-control compact-input" placeholder="مثلاً: مسابقة البرمجة السنوية" 
+                                <input name="title" type="text" className="form-control compact-input" placeholder="مثلاً: مسابقة البرمجة السنوية"
                                     required value={formData.title} onChange={handleChange} />
                             </div>
 
                             <div className="col-md-6">
                                 <label className="form-label text-danger">الموعد النهائي</label>
-                                <input name="deadline" type="date" className="form-control compact-input" 
+                                <input name="deadline" type="date" className="form-control compact-input"
                                     required value={formData.deadline} onChange={handleChange} />
                             </div>
                             <div className="col-md-6">
@@ -197,7 +197,7 @@ const response = await apiFetch(`${baseUrl}api/Posts/Create`, {
 
                             <div className="col-md-6">
                                 <label className="form-label">طريقة المشاركة</label>
-                                <select name="participationType" className="form-select compact-input" 
+                                <select name="participationType" className="form-select compact-input"
                                     value={formData.participationType} onChange={handleChange}>
                                     <option value="فردي">فردي فقط</option>
                                     <option value="فريق">فريق عمل</option>
@@ -205,7 +205,7 @@ const response = await apiFetch(`${baseUrl}api/Posts/Create`, {
                             </div>
                             <div className="col-md-6">
                                 <label className="form-label">مكان المسابقة / العمل</label>
-                                <select name="location" className="form-select compact-input" 
+                                <select name="location" className="form-select compact-input"
                                     value={formData.location} onChange={handleChange}>
                                     <option value="أونلاين">أونلاين</option>
                                     <option value="داخل الحرم الجامعي">داخل الحرم الجامعي</option>
@@ -216,7 +216,7 @@ const response = await apiFetch(`${baseUrl}api/Posts/Create`, {
                             {formData.participationType === 'فريق' && (
                                 <div className="col-12 animate__animated animate__fadeIn">
                                     <label className="form-label">الحد الأقصى لأعضاء الفريق</label>
-                                    <input name="maxMembers" type="number" min="2" className="form-control compact-input" 
+                                    <input name="maxMembers" type="number" min="2" className="form-control compact-input"
                                         value={formData.maxMembers} onChange={handleChange} />
                                 </div>
                             )}

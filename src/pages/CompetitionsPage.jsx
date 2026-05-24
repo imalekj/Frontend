@@ -3,47 +3,47 @@ import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { apiFetch } from '../api';
 export const CompetitionsPage = () => {
-    const [mainTab, setMainTab] = useState('الكل'); 
+    const [mainTab, setMainTab] = useState('الكل');
     const [categoryFilter, setCategoryFilter] = useState('الكل');
     const [searchTerm, setSearchTerm] = useState('');
-    
+
     const navigate = useNavigate();
     const { isLoggedIn } = useContext(AuthContext);
-    
+
     const mainGreen = '#1a5d44';
     const accentGold = '#c5a059';
     const baseUrl = import.meta.env.VITE_API_BASE_URL;
 
-                const [allData, setAllData] = useState([]);
+    const [allData, setAllData] = useState([]);
 
 
 
 
-               useEffect(() => {
-    apiFetch(`${baseUrl}api/Posts/GetAllProject`, {
-        headers: {
-            "ngrok-skip-browser-warning": "true"
-        }
-    })
-    .then(res => res.json())
-    .then(data => setAllData(data))
-    .catch(err => console.log(err));
-}, []);
-const filteredResults = allData.filter(item => {
+    useEffect(() => {
+        apiFetch(`${baseUrl}api/Posts/GetAllProject`, {
+            headers: {
+                "ngrok-skip-browser-warning": "true"
+            }
+        })
+            .then(res => res.json())
+            .then(data => setAllData(data))
+            .catch(err => console.log(err));
+    }, []);
+    const filteredResults = allData.filter(item => {
 
-    const matchesTab =
-        mainTab === 'الكل' ||
-        (mainTab === 'مشروع' && item.isGraduationProject) ||
-        (mainTab === 'مسابقة' && !item.isGraduationProject);
+        const matchesTab =
+            mainTab === 'الكل' ||
+            (mainTab === 'مشروع' && item.isGraduationProject) ||
+            (mainTab === 'مسابقة' && !item.isGraduationProject);
 
-    const matchesCategory = true; // مؤقتًا (ما عندك category)
+        const matchesCategory = true; // مؤقتًا (ما عندك category)
 
-    const matchesSearch = (item.name ?? "")
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase());
+        const matchesSearch = (item.name ?? "")
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase());
 
-    return matchesTab && matchesCategory && matchesSearch;
-});
+        return matchesTab && matchesCategory && matchesSearch;
+    });
     // دالة التعامل مع النشر
     const handleCreatePost = () => {
         if (isLoggedIn) {
@@ -145,8 +145,8 @@ const filteredResults = allData.filter(item => {
                         <h2 className="fw-900 mb-2">استكشاف الفرص</h2>
                         <p className="text-muted fw-bold small mb-0">اكتشف المسابقات الرسمية ومشاريع التخرج القائمة</p>
                     </div>
-                    
-                    <button 
+
+                    <button
                         className="btn btn-create shadow-sm ms-3 d-flex align-items-center gap-2"
                         onClick={handleCreatePost}
                     >
@@ -154,17 +154,17 @@ const filteredResults = allData.filter(item => {
                         <span>نشر فرصة</span>
                     </button>
                 </div>
-                
+
                 <div className="search-container mt-3 mt-md-0" style={{ width: '300px' }}>
                     <div className="position-relative">
-                        <input 
-                            type="text" 
-                            className="form-control shadow-sm border-0" 
+                        <input
+                            type="text"
+                            className="form-control shadow-sm border-0"
                             placeholder="ابحث عن مهارة أو عنوان..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
-                        <i className="bi bi-search position-absolute" style={{left: '15px', top: '13px', color: '#94a3b8'}}></i>
+                        <i className="bi bi-search position-absolute" style={{ left: '15px', top: '13px', color: '#94a3b8' }}></i>
                     </div>
                 </div>
             </div>
@@ -173,7 +173,7 @@ const filteredResults = allData.filter(item => {
                 <div className="col-lg-6 text-center text-lg-end">
                     <div className="tab-switcher shadow-sm">
                         {['الكل', 'مسابقة', 'مشروع'].map(tab => (
-                            <button 
+                            <button
                                 key={tab}
                                 className={`tab-btn ${mainTab === tab ? 'active' : ''}`}
                                 onClick={() => setMainTab(tab)}
@@ -187,7 +187,7 @@ const filteredResults = allData.filter(item => {
                     <div className="d-flex justify-content-center justify-content-lg-start gap-2 flex-wrap">
                         <span className="small fw-bold text-muted ms-2 align-self-center">تصفية حسب:</span>
                         {['الكل', 'برمجيات', 'أعمال', 'IT'].map(cat => (
-                            <button 
+                            <button
                                 key={cat}
                                 className={`btn btn-sm px-3 rounded-pill fw-bold ${categoryFilter === cat ? 'btn-dark' : 'btn-outline-light text-dark border'}`}
                                 onClick={() => setCategoryFilter(cat)}
@@ -209,8 +209,8 @@ const filteredResults = allData.filter(item => {
                                 <img src={item.image} className="w-100 h-100 shadow-sm" style={{ objectFit: 'cover' }} alt="" />
                                 <div style={{ position: 'absolute', bottom: 0, right: 0, left: 0, height: '50%', background: 'linear-gradient(to top, rgba(0,0,0,0.4), transparent)' }}></div>
                             </div>
-                            
-                          <div className="card-body p-4">
+
+                            <div className="card-body p-4">
 
                                 {/* TOP INFO */}
                                 <div className="d-flex justify-content-between mb-2">
@@ -255,7 +255,7 @@ const filteredResults = allData.filter(item => {
                             </div>
 
                             <div className="card-footer bg-transparent border-0 p-4 pt-0">
-                                <button 
+                                <button
                                     className="btn btn-outline-success w-100 fw-bold py-2 shadow-sm"
                                     style={{ borderRadius: '10px', fontSize: '0.85rem' }}
                                     onClick={() => navigate(`/competition/${item.projectID}`)}

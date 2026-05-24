@@ -6,8 +6,8 @@ import { useAuth } from '../context/AuthContext';
 import { apiFetch } from '../api';
 export const Notifications = () => {
     const navigate = useNavigate();
-     const { user, token } = useAuth();
-           const isLoggedIn = !!token;
+    const { user, token } = useAuth();
+    const isLoggedIn = !!token;
     const mainGreen = '#1a5d44';
     const baseUrl = import.meta.env.VITE_API_BASE_URL;
     const [filter, setFilter] = useState('all');
@@ -84,7 +84,7 @@ export const Notifications = () => {
                         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
                     });
                     setNotifications(notifications.filter(n => n.id !== id));
-                    
+
                     Swal.fire({
                         icon: 'success',
                         title: 'تم الحذف بنجاح',
@@ -205,8 +205,8 @@ export const Notifications = () => {
                             </div>
                         ) : filteredNotifs.length > 0 ? (
                             filteredNotifs.map((n) => (
-                                <div 
-                                    key={n.id} 
+                                <div
+                                    key={n.id}
                                     className={`card notif-card p-3 shadow-sm border-0 ${!n.isRead ? 'unread' : 'bg-white'}`}
                                     onClick={() => {
                                         markAsRead(n.id);
@@ -219,7 +219,7 @@ export const Notifications = () => {
                                             {n.type === 'new_request' && <i className="bi bi-people-fill text-primary fs-4"></i>}
                                             {n.type === 'system' && <i className="bi bi-megaphone-fill text-warning fs-4"></i>}
                                         </div>
-                                        
+
                                         <div className="flex-grow-1 text-end">
                                             <div className="d-flex justify-content-between align-items-start">
                                                 <p className="mb-1 small fw-bold text-dark lh-base" style={{ maxWidth: '85%' }}>

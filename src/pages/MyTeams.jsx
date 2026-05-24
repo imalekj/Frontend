@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
-import { useAuth } from '../context/AuthContext'; 
+import { useAuth } from '../context/AuthContext';
 import { apiFetch } from '../api';
 export const MyTeams = () => {
     const navigate = useNavigate();
-     const { user, token } = useAuth();
-           const isLoggedIn = !!token;
+    const { user, token } = useAuth();
+    const isLoggedIn = !!token;
     const baseUrl = import.meta.env.VITE_API_BASE_URL;
     const mainGreen = '#1a5d44';
 
@@ -15,36 +15,36 @@ export const MyTeams = () => {
     const [teams, setTeams] = useState([]);
     const [loading, setLoading] = useState(true);
 
-useEffect(() => {
-    const fetchTeams = async () => {
-        if (!token) return;
+    useEffect(() => {
+        const fetchTeams = async () => {
+            if (!token) return;
 
-        try {
-            const response = await apiFetch(`${baseUrl}api/Teams/GetUserTeams`, {
-                method: "GET",
-                 headers: {
-                    "Authorization": `Bearer ${token}`,
-                    "Content-Type": "application/json"
+            try {
+                const response = await apiFetch(`${baseUrl}api/Teams/GetUserTeams`, {
+                    method: "GET",
+                    headers: {
+                        "Authorization": `Bearer ${token}`,
+                        "Content-Type": "application/json"
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    setTeams(data);
+                } else {
+                    const errorText = await response.text();
+                    console.log("API Error:", errorText);
                 }
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                setTeams(data);
-            } else {
-                const errorText = await response.text();
-                console.log("API Error:", errorText);
+            } catch (error) {
+                console.log("Connection error:", error);
+            } finally {
+                setLoading(false);
             }
-        } catch (error) {
-            console.log("Connection error:", error);
-        } finally {
-            setLoading(false);
-        }
-    };
-      
-    fetchTeams();
-}, [token]);
-  console.log(teams);
+        };
+
+        fetchTeams();
+    }, [token]);
+    console.log(teams);
     return (
         <div className="container py-4 text-end" dir="rtl" style={{ maxWidth: '900px', fontFamily: 'Cairo, sans-serif' }}>
             <style>
@@ -129,7 +129,7 @@ useEffect(() => {
                                         </div>
                                         <div className="d-flex align-items-center">
                                             {/* محاكاة عرض الأعضاء بناءً على عددهم */}
-                                            {[...Array(Math.min(Number(team.availableSeats  || 0), 4))].map((_, i) => (
+                                            {[...Array(Math.min(Number(team.availableSeats || 0), 4))].map((_, i) => (
                                                 <img
                                                     key={i}
                                                     src={defaultAvatar}
@@ -150,11 +150,11 @@ useEffect(() => {
                                     <span className="text-muted" style={{ fontSize: '0.7rem' }}>آخر تحديث: {new Date(team.updatedAt).toLocaleDateString()}</span>
                                     <div className="d-flex gap-2">
                                         <button
-                                          onClick={() =>
-                                                        navigate(`/team-details/${team.projectId || team.ProjectId}`, {
-                                                            state: team
-                                                        })
-                                                        }
+                                            onClick={() =>
+                                                navigate(`/team-details/${team.projectId || team.ProjectId}`, {
+                                                    state: team
+                                                })
+                                            }
                                             className="btn btn-light btn-action-sm border shadow-sm"
                                         >
                                             <i className="bi bi-info-circle me-1"></i> التفاصيل

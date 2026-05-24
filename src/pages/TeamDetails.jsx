@@ -14,92 +14,92 @@ export const TeamDetails = () => {
     const { teamId } = useParams();
     const [team, setTeam] = useState(state || null);
     const [count, setCount] = useState(0);
-   const { user, token } = useAuth();
-useEffect(() => {
-    const fetchMembers = async () => {
-        try {
-          const res = await apiFetch(
-    `${baseUrl}api/Teams/GetAllTeamMembersByProjectId?ProjectId=${teamId}`,
-    {
-          method: "GET",
-        headers: {
-            "Authorization": `Bearer ${token}`
-        }
-    }
-);
-                    if (!res.ok) {
-                throw new Error('Network response was not ok');
-            }
-
-            const data = await res.json();
-            setMembers(data);
-           setCount(data.length);
-        } catch (error) {
-            console.error(error);
-            Swal.fire('خطأ', 'فشل تحميل أعضاء الفريق', 'error');
-        }
-    };
-
-    fetchMembers();
-}, []);
-
-
-    // التحقق مما إذا كان المستخدم الحالي هو قائد الفريق
-   const isCurrentUserOwner = members.find(m => m.id === user?.id)?.role === "Manger";
-
-    const getDefaultAvatar = (seed) => `https://api.dicebear.com/7.x/identicon/svg?seed=${seed}`;
-
-const handleLeaveTeam = () => {
-    if (isCurrentUserOwner) {
-        return Swal.fire(
-            'تنبيه',
-            'لا يمكن لقائد الفريق المغادرة قبل تعيين قائد جديد أو حذف الفريق.',
-            'info'
-        );
-    }
-
-    Swal.fire({
-        title: 'هل أنت متأكد؟',
-        text: "لن تتمكن من الوصول إلى ملفات الفريق بعد المغادرة!",
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#d33',
-        cancelButtonColor: mainGreen,
-        confirmButtonText: 'نعم، غادر الفريق',
-        cancelButtonText: 'إلغاء',
-        reverseButtons: true
-    }).then(async (result) => {
-        if (result.isConfirmed) {
+    const { user, token } = useAuth();
+    useEffect(() => {
+        const fetchMembers = async () => {
             try {
                 const res = await apiFetch(
-                    `${baseUrl}api/PostRequests/UnsubscribeToProject?Projectid=${state?.projectId}`,
+                    `${baseUrl}api/Teams/GetAllTeamMembersByProjectId?ProjectId=${teamId}`,
                     {
-                        method: "DELETE",
+                        method: "GET",
                         headers: {
                             "Authorization": `Bearer ${token}`
                         }
                     }
                 );
-
                 if (!res.ok) {
-                    throw new Error("Failed to leave team");
+                    throw new Error('Network response was not ok');
                 }
 
-                Swal.fire(
-                    'تمت المغادرة!',
-                    'لقد خرجت من الفريق بنجاح.',
-                    'success'
-                );
-
-                navigate('/my-teams');
-
+                const data = await res.json();
+                setMembers(data);
+                setCount(data.length);
             } catch (error) {
                 console.error(error);
-                Swal.fire('خطأ', 'لم يتم مغادرة الفريق', 'error');
+                Swal.fire('خطأ', 'فشل تحميل أعضاء الفريق', 'error');
             }
+        };
+
+        fetchMembers();
+    }, []);
+
+
+    
+    const isCurrentUserOwner = members.find(m => m.id === user?.id)?.role === "Manger";
+
+    const getDefaultAvatar = (seed) => `https://api.dicebear.com/7.x/identicon/svg?seed=${seed}`;
+
+    const handleLeaveTeam = () => {
+        if (isCurrentUserOwner) {
+            return Swal.fire(
+                'تنبيه',
+                'لا يمكن لقائد الفريق المغادرة قبل تعيين قائد جديد أو حذف الفريق.',
+                'info'
+            );
         }
-    });
-};
+
+        Swal.fire({
+            title: 'هل أنت متأكد؟',
+            text: "لن تتمكن من الوصول إلى ملفات الفريق بعد المغادرة!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: mainGreen,
+            confirmButtonText: 'نعم، غادر الفريق',
+            cancelButtonText: 'إلغاء',
+            reverseButtons: true
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                try {
+                    const res = await apiFetch(
+                        `${baseUrl}api/PostRequests/UnsubscribeToProject?Projectid=${state?.projectId}`,
+                        {
+                            method: "DELETE",
+                            headers: {
+                                "Authorization": `Bearer ${token}`
+                            }
+                        }
+                    );
+
+                    if (!res.ok) {
+                        throw new Error("Failed to leave team");
+                    }
+
+                    Swal.fire(
+                        'تمت المغادرة!',
+                        'لقد خرجت من الفريق بنجاح.',
+                        'success'
+                    );
+
+                    navigate('/my-teams');
+
+                } catch (error) {
+                    console.error(error);
+                    Swal.fire('خطأ', 'لم يتم مغادرة الفريق', 'error');
+                }
+            }
+        });
+    };
     return (
         <div className="container py-5 text-end" dir="rtl" style={{ fontFamily: 'Cairo, sans-serif' }}>
 
@@ -133,37 +133,37 @@ const handleLeaveTeam = () => {
                         <h5 className="fw-bold mb-3">وصف المشروع</h5>
                         <p className="text-secondary leading-loose mb-5">{state?.description}</p>
 
-                        <h5 className="fw-bold mb-4">أعضاء الفريق ({count })</h5>
+                        <h5 className="fw-bold mb-4">أعضاء الفريق ({count})</h5>
                         <div className="row g-3">
-                            {members.map(member =>(
+                            {members.map(member => (
                                 <div key={member.fullName} className="col-md-6">
                                     <div
                                         className="member-item p-3 d-flex align-items-center gap-3"
                                         onClick={() => navigate(`/profile/${member.id}`)}
                                     >
                                         <img
-                                              src={member.imagePath 
-                                                        ? `https://localhost:7011${member.imagePath}` 
-                                                        : getDefaultAvatar(member.id)
-                                                    }
+                                            src={member.imagePath
+                                                ? `https://localhost:7011${member.imagePath}`
+                                                : getDefaultAvatar(member.id)
+                                            }
                                             style={{ width: '50px', height: '50px', borderRadius: '12px' }}
                                             alt="avatar"
                                         />
                                         <div>
-                                           <h6 className="fw-bold mb-0">
-                                                    {member.fullName}
+                                            <h6 className="fw-bold mb-0">
+                                                {member.fullName}
 
-                                                    {member.id === user?.id && (
-                                                        <span className="ms-2 badge bg-info text-white small">
-                                                            أنت
-                                                        </span>
-                                                    )}
+                                                {member.id === user?.id && (
+                                                    <span className="ms-2 badge bg-info text-white small">
+                                                        أنت
+                                                    </span>
+                                                )}
 
-                                                    {member.role === "Manger" && (
-                                                        <span className="ms-2 badge bg-warning text-dark small">
-                                                            قائد
-                                                        </span>
-                                                    )}
+                                                {member.role === "Manger" && (
+                                                    <span className="ms-2 badge bg-warning text-dark small">
+                                                        قائد
+                                                    </span>
+                                                )}
                                             </h6>
                                             <small className="text-muted">{member.role}</small>
                                         </div>
@@ -202,7 +202,7 @@ const handleLeaveTeam = () => {
                         <button
                             className="btn w-100 py-3 mb-3 fw-bold shadow-sm btn-action"
                             style={{ background: mainGreen, color: 'white' }}
-                            onClick={() => navigate(`/evaluate/${state?.projectId}`, {state: members})}
+                            onClick={() => navigate(`/evaluate/${state?.projectId}`, { state: members })}
                         >
                             <i className="bi bi-star-fill me-2"></i> تقييم أعضاء الفريق
                         </button>

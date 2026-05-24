@@ -1,101 +1,101 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import toast, { Toaster } from 'react-hot-toast';
-import { useAuth } from '../context/AuthContext'; 
+import { useAuth } from '../context/AuthContext';
 import { apiFetch } from '../api';
 export const TodoListPage = () => {
-    const { teamId: ProjectId } = useParams(); 
+    const { teamId: ProjectId } = useParams();
     const navigate = useNavigate();
-    const { user } = useAuth(); 
+    const { user } = useAuth();
     const mainGreen = '#1a5d44';
     const baseUrl = import.meta.env.VITE_API_BASE_URL;
     const [tasks, setTasks] = useState([]);
     const [newTask, setNewTask] = useState('');
     const [loading, setLoading] = useState(false);
 
-    const isOwner = user?.role === 'admin' || user?.id === 101; 
-
-   
-const fetchTasks = async () => {
-    setLoading(true);
-
-    try {
-        const res = await apiFetch(
-            `${baseUrl}api/Teams/GetAllTaskByProjectId?ProjectId=${ProjectId}`)
-
-        const data = await res.json();
-
-        const formattedTasks = data.map(task => ({
-            id: task.taskid,
-            text: task.taskName,
-            completed: task.isDone,
-            description: task.description,
-            projectId: task.projectID
-        }));
-
-        setTasks(formattedTasks);
-
-    } catch (err) {
-        console.error(err);
-    } finally {
-        setLoading(false);
-    }
-};
-useEffect(() => {
-    if (ProjectId) {
-        fetchTasks();
-    }
-}, [ProjectId]);
-
-const addTask = async (e) => {
-    e.preventDefault();
-
-    if (!newTask.trim()) return;
-
-    try {
-        await apiFetch(`${baseUrl}api/Teams/addTaskByTeamID`)
+    const isOwner = user?.role === 'admin' || user?.id === 101;
 
 
-        setNewTask(''); // تفريغ الحقل
+    const fetchTasks = async () => {
+        setLoading(true);
 
-    } catch (err) {
-        console.error(err);
-    }
-};
+        try {
+            const res = await apiFetch(
+                `${baseUrl}api/Teams/GetAllTaskByProjectId?ProjectId=${ProjectId}`)
+
+            const data = await res.json();
+
+            const formattedTasks = data.map(task => ({
+                id: task.taskid,
+                text: task.taskName,
+                completed: task.isDone,
+                description: task.description,
+                projectId: task.projectID
+            }));
+
+            setTasks(formattedTasks);
+
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setLoading(false);
+        }
+    };
+    useEffect(() => {
+        if (ProjectId) {
+            fetchTasks();
+        }
+    }, [ProjectId]);
+
+    const addTask = async (e) => {
+        e.preventDefault();
+
+        if (!newTask.trim()) return;
+
+        try {
+            await apiFetch(`${baseUrl}api/Teams/addTaskByTeamID`)
+
+
+            setNewTask(''); // تفريغ الحقل
+
+        } catch (err) {
+            console.error(err);
+        }
+    };
 
     const toggleComplete = (id) => {
-        setTasks(tasks.map(task => 
+        setTasks(tasks.map(task =>
             task.id === id ? { ...task, completed: !task.completed } : task
         ));
     };
 
-  const deleteTask = async (id) => {
-    try {
-        const res = await apiFetch(`${baseUrl}api/Teams/deleteTaskByTaskID?taskId=${id}`);
-      
+    const deleteTask = async (id) => {
+        try {
+            const res = await apiFetch(`${baseUrl}api/Teams/deleteTaskByTaskID?taskId=${id}`);
 
-        if (!res.ok) {
-            throw new Error("فشل الحذف");
+
+            if (!res.ok) {
+                throw new Error("فشل الحذف");
+            }
+
+            // حذف من الواجهة مباشرة (optimistic update)
+            setTasks(prev => prev.filter(task => task.id !== id));
+
+            toast.success('تم حذف المهمة ✅');
+
+        } catch (err) {
+            console.error(err);
+            toast.error('حدث خطأ أثناء الحذف ❌');
         }
-
-        // حذف من الواجهة مباشرة (optimistic update)
-        setTasks(prev => prev.filter(task => task.id !== id));
-
-        toast.success('تم حذف المهمة ✅');
-
-    } catch (err) {
-        console.error(err);
-        toast.error('حدث خطأ أثناء الحذف ❌');
-    }
-};
-    const completionRate = tasks.length > 0 
-        ? Math.round((tasks.filter(t => t.completed).length / tasks.length) * 100) 
+    };
+    const completionRate = tasks.length > 0
+        ? Math.round((tasks.filter(t => t.completed).length / tasks.length) * 100)
         : 0;
 
     return (
         <div className="min-vh-100 py-5" style={{ backgroundColor: '#f4f7f6', fontFamily: 'Cairo, sans-serif' }} dir="rtl">
             <Toaster position="top-center" />
-            
+
             <style>
                 {`
                     .todo-card { border-radius: 20px; border: none; }
@@ -121,18 +121,18 @@ const addTask = async (e) => {
                             <h2 className="fw-bold mb-1" style={{ color: mainGreen }}>قائمة مهام الفريق المشتركة</h2>
                             <p className="text-muted mb-0 small">بإمكان جميع أعضاء الفريق التعاون في إدارة المهام</p>
                         </div>
-                                <button
-                                        className="btn-refresh shadow-sm"
-                                        onClick={fetchTasks}
-                                        disabled={loading}
-                                    >
-                                        {loading ? (
-                                            <span className="spinner-border spinner-border-sm me-2"></span>
-                                        ) : (
-                                            <i className="bi bi-arrow-repeat me-2"></i>
-                                        )}
-                                        تحديث البيانات
-                                    </button>
+                        <button
+                            className="btn-refresh shadow-sm"
+                            onClick={fetchTasks}
+                            disabled={loading}
+                        >
+                            {loading ? (
+                                <span className="spinner-border spinner-border-sm me-2"></span>
+                            ) : (
+                                <i className="bi bi-arrow-repeat me-2"></i>
+                            )}
+                            تحديث البيانات
+                        </button>
                     </div>
                 </div>
 
@@ -142,9 +142,9 @@ const addTask = async (e) => {
                         <div className="card todo-card shadow-sm p-4 mb-4 animate__animated animate__fadeIn">
                             <form onSubmit={addTask}>
                                 <div className="input-group shadow-sm" style={{ borderRadius: '12px', overflow: 'hidden' }}>
-                                    <input 
-                                        type="text" 
-                                        className="form-control input-task bg-light text-end" 
+                                    <input
+                                        type="text"
+                                        className="form-control input-task bg-light text-end"
                                         placeholder="أضف مهمة للفريق يا {user?.name}..."
                                         value={newTask}
                                         onChange={(e) => setNewTask(e.target.value)}
@@ -170,9 +170,9 @@ const addTask = async (e) => {
                                     {tasks.map(task => (
                                         <div key={task.id} className="task-item p-3 mb-3 d-flex align-items-center justify-content-between animate__animated animate__fadeInUp">
                                             <div className="d-flex align-items-center gap-3">
-                                                <input 
-                                                    type="checkbox" 
-                                                    className="form-check-input custom-checkbox mt-0" 
+                                                <input
+                                                    type="checkbox"
+                                                    className="form-check-input custom-checkbox mt-0"
                                                     checked={task.completed}
                                                     onChange={() => toggleComplete(task.id)}
                                                     style={{ accentColor: mainGreen }}
@@ -181,12 +181,12 @@ const addTask = async (e) => {
                                                     <span className={`fs-5 fw-medium ${task.completed ? 'completed-text' : 'text-dark'}`}>
                                                         {task.text}
                                                     </span>
-                                                    {task.addedBy && <small className="text-muted" style={{fontSize: '0.7rem'}}>أضيفت بواسطة: {task.addedBy}</small>}
+                                                    {task.addedBy && <small className="text-muted" style={{ fontSize: '0.7rem' }}>أضيفت بواسطة: {task.addedBy}</small>}
                                                 </div>
                                             </div>
                                             {/* أيقونة الحذف متاحة للجميع الآن */}
-                                            <button 
-                                                onClick={() => deleteTask(task.id)} 
+                                            <button
+                                                onClick={() => deleteTask(task.id)}
                                                 className="btn btn-outline-danger border-0 rounded-circle"
                                             >
                                                 <i className="bi bi-trash3"></i>
@@ -206,12 +206,12 @@ const addTask = async (e) => {
                                     </span>
                                 </div>
                                 <div className="progress progress-custom">
-                                    <div 
-                                        className="progress-bar progress-bar-striped progress-bar-animated" 
-                                        role="progressbar" 
-                                        style={{ 
+                                    <div
+                                        className="progress-bar progress-bar-striped progress-bar-animated"
+                                        role="progressbar"
+                                        style={{
                                             width: `${completionRate}%`,
-                                            backgroundColor: mainGreen 
+                                            backgroundColor: mainGreen
                                         }}
                                     ></div>
                                 </div>
