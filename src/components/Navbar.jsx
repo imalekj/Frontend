@@ -3,12 +3,15 @@ import { NavLink, Link, useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import zujLogo from '../assets/logo.png';
 import { useAuth } from '../context/AuthContext';
-
+import { apiFetch } from '../api';
 export const Navbar = () => {
-    const { user, token, logout } = useAuth();
-    const isLoggedIn = !!token && token !== "undefined";
     
-    const [notifCount] = useState(3);
+    const { user, token, logout } = useAuth();
+    
+    const baseUrl = import.meta.env.VITE_API_BASE_URL;
+    const isLoggedIn = !!token;
+    const [userInfo, setUserInfo] = useState(null);
+   
     const [showUserDropdown, setShowUserDropdown] = useState(false);
     const [showNotifDropdown, setShowNotifDropdown] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
@@ -16,18 +19,61 @@ export const Navbar = () => {
     const mainGreen = '#1a5d44';
     const userRef = useRef(null);
     const notifRef = useRef(null);
+    const [notifications, setNotifications] = useState([]);
+    const [notifCount, setNotifCount] = useState(0);
 
-    useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (userRef.current && !userRef.current.contains(event.target)) setShowUserDropdown(false);
-            if (notifRef.current && !notifRef.current.contains(event.target)) setShowNotifDropdown(false);
-        };
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
+useEffect(() => {
+    const fetchUser = async () => {
+        if (!user?.id) return;
 
+        try {
+           const response = await apiFetch(`${baseUrl}api/Login/GetUserInfo/${user.id}`);
+            if (!response.ok) {
+                throw new Error("Failed to fetch user info");
+            }
+
+            const data = await response.json();
+            setUserInfo(data);
+
+        } catch (error) {
+            console.error("Error fetching user:", error);
+        }
+    };
+
+    fetchUser();
+}, [user?.id]);
+useEffect(() => {
+    const fetchNotifications = async () => {
+        if (!user?.id) return;
+
+        try {
+       const res = await apiFetch(`${baseUrl}api/Notification/GetNotification`,
+  {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  }
+);
+
+            if (!res.ok) {
+                throw new Error("Failed to fetch notifications");
+            }
+
+            const data = await res.json();
+
+            setNotifications(data);
+            setNotifCount(data.length);
+
+        } catch (error) {
+            console.error("Notification error:", error);
+        }
+    };
+
+    fetchNotifications();
+}, [user?.id, token]);
     const handleLogout = () => {
         setShowUserDropdown(false);
+        
         Swal.fire({
             title: 'تسجيل الخروج',
             text: "هل أنت متأكد من أنك تريد مغادرة المنصة؟",
@@ -41,7 +87,9 @@ export const Navbar = () => {
             customClass: { popup: 'rounded-4 shadow-lg', title: 'fw-bold' }
         }).then((result) => {
             if (result.isConfirmed) {
+                // 3. استدعاء دالة logout من السياق
                 logout(); 
+                
                 Swal.fire({
                     title: 'تم!',
                     text: 'تم تسجيل خروجك بنجاح.',
@@ -98,7 +146,7 @@ export const Navbar = () => {
                         {isLoggedIn && (
                             <>
                                 <li className="nav-item"><NavLink className="nav-link px-3" to="/my-teams">فرقي</NavLink></li>
-                                <li className="nav-item"><NavLink className="nav-link px-3" to="/chat">الدردشة</NavLink></li>
+                                <li className="nav-item"><NavLink className="nav-link px-3" to="/Chat">الدردشة</NavLink></li>
                             </>
                         )}
                     </ul>
@@ -127,10 +175,21 @@ export const Navbar = () => {
                                 {showNotifDropdown && (
                                     <div className="custom-dropdown text-end">
                                         <div className="px-3 py-2 border-bottom fw-bold small text-muted">الإشعارات</div>
-                                        <div className="p-4 text-center">
-                                            <i className="bi bi-bell-slash text-light fs-2 d-block mb-2"></i>
-                                            <span className="small text-muted">لا توجد تنبيهات جديدة</span>
-                                        </div>
+                                      {notifications.length === 0 ? (
+                                                <div className="p-4 text-center">
+                                                    <i className="bi bi-bell-slash text-light fs-2 d-block mb-2"></i>
+                                                    <span className="small text-muted">لا توجد إشعارات</span>
+                                                </div>
+                                            ) : (
+                                                notifications.map((n) => (
+                                                    <div key={n.id} className="px-3 py-2 border-bottom">
+                                                        <div className="small fw-bold">{n.title}</div>
+                                                        <div className="text-muted" style={{ fontSize: "0.75rem" }}>
+                                                            {n.message}
+                                                        </div>
+                                                    </div>
+                                                ))
+                                            )}
                                     </div>
                                 )}
                             </div>
@@ -142,11 +201,11 @@ export const Navbar = () => {
                             <div className="position-relative ms-1" ref={userRef}>
                                 <button className="btn border-0 p-1 d-flex align-items-center gap-2 shadow-none" onClick={() => setShowUserDropdown(!showUserDropdown)}>
                                     <div className="text-end d-none d-xl-block">
-                                        <div className="fw-bold text-dark lh-1" style={{ fontSize: '0.85rem' }}>{user?.fullName || user?.name || "مستخدم"}</div>
+                                        <div className="fw-bold text-dark lh-1" style={{ fontSize: '0.85rem' }}>{user?.fullName || "مستخدم"}</div>
                                         <small className="text-muted" style={{ fontSize: '0.7rem' }}>{user?.universityMajor || "طالب تقنية معلومات"}</small>
                                     </div>
                                     <img 
-                                        src={user?.profilePic || "https://static.vecteezy.com/system/resources/thumbnails/009/292/244/small/default-avatar-icon-of-social-media-user-vector.jpg"} 
+                                        src={`https://localhost:7011${userInfo?.imagePath}`}
                                         className="rounded-circle border shadow-sm" 
                                         width="38" height="38" 
                                         style={{objectFit: 'cover'}} 
