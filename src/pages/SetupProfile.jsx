@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import toast, { Toaster } from 'react-hot-toast';
 import Swal from 'sweetalert2';
 import { useAuth } from '../context/AuthContext';
+import { AppColors } from '../theme/AppColors';
 
-// تأكد من وجود هذه البيانات خارج المكون أو استيرادها
 const facultiesData = {
     "كلية تكنولوجيا المعلومات": ["هندسة البرمجيات", "علم الحاسوب", "الأمن السيبراني", "الذكاء الاصطناعي", "نظم المعلومات الحاسوبية"],
     "كلية الهندسة والتكنولوجيا": ["الهندسة المدنية", "الهندسة الميكانيكية", "الهندسة الكهربائية", "هندسة العمارة"],
@@ -12,14 +12,13 @@ const facultiesData = {
     "كلية التمريض": ["التمريض"],
     "كلية الأعمال": ["إدارة الأعمال", "المحاسبة", "العلوم المالية والمصرفية", "التسويق"],
     "كلية الحقوق": ["الحقوق"],
-    "كلية الآداب": ["الغة العربية", "اللغة الإنجليزية", "الترجمة"],
+    "كلية الآداب": ["اللغة العربية", "اللغة الإنجليزية", "الترجمة"],
     "كلية العلوم والآداب": ["الرياضيات", "الفيزياء"]
 };
 
 export const SetupProfile = () => {
     const navigate = useNavigate();
-    const { login } = useAuth(); // تأكد من استخراج دالة login من Context
-    const mainGreen = '#1a5d44';
+    const { login } = useAuth();
     
     const [step, setStep] = useState(1);
     const [loading, setLoading] = useState(false);
@@ -39,7 +38,7 @@ export const SetupProfile = () => {
         skills: [],
         profileImage: null,
         description: '',
-        pastProjects: [] // أضفتها لتجنب أخطاء الـ map لاحقاً
+        pastProjects: []
     });
 
     const getSocialIcon = (url) => {
@@ -103,7 +102,6 @@ export const SetupProfile = () => {
         }
     };
 
-    // الدالة الموحدة للإرسال (تم حذف التكرار)
     const verifyAndSubmit = async (e) => {
         if (e) e.preventDefault();
         setLoading(true);
@@ -114,7 +112,7 @@ export const SetupProfile = () => {
             formDataToSend.append("UserName", formData.userName);
             formDataToSend.append("Email", formData.email);
             formDataToSend.append("Password", formData.password);
-            formDataToSend.append("Role", "true"); // لاحظ إرسالها كنص إذا كان الباكيند يتوقع ذلك
+            formDataToSend.append("Role", "true");
             formDataToSend.append("githubUrl", formData.githubUrl || "");
             formDataToSend.append("workField", formData.workField || "");
             formDataToSend.append("Specialization", formData.universityMajor || "");
@@ -143,7 +141,7 @@ export const SetupProfile = () => {
                 title: 'تم بنجاح',
                 text: 'تم إنشاء الحساب بنجاح 🎉',
                 icon: 'success',
-                confirmButtonColor: mainGreen
+                confirmButtonColor: AppColors.primaryGreen || '#1a5d44'
             }).then(() => navigate('/profile'));
 
         } catch (error) {
@@ -160,16 +158,16 @@ export const SetupProfile = () => {
             <style>{`
                 .setup-card { border: none; border-radius: 24px; overflow: hidden; background: #ffffff; }
                 .input-custom { background: #fdfdfd; border: 1.5px solid #eee; border-radius: 12px; padding: 12px; transition: all 0.3s; }
-                .input-custom:focus { border-color: ${mainGreen}; box-shadow: 0 0 10px rgba(26, 93, 68, 0.05); outline: none; }
+                .input-custom:focus { border-color: ${AppColors.primaryGreen || '#1a5d44'}; box-shadow: 0 0 10px rgba(26, 93, 68, 0.05); outline: none; }
                 .step-dot { width: 10px; height: 10px; border-radius: 50%; background: #ddd; transition: 0.3s; }
-                .step-dot.active { background: ${mainGreen}; transform: scale(1.3); }
+                .step-dot.active { background: ${AppColors.primaryGreen || '#1a5d44'}; transform: scale(1.3); }
                 .condition-tag { font-size: 0.75rem; padding: 4px 10px; border-radius: 20px; transition: 0.3s; }
             `}</style>
 
             <div className="row justify-content-center">
                 <div className="col-lg-7 col-md-10">
                     <div className="setup-card shadow-lg">
-                        <div className="text-center p-5 text-white" style={{ background: `linear-gradient(135deg, ${mainGreen}, #2a8d68)` }}>
+                        <div className="text-center p-5 text-white" style={{ background: `linear-gradient(135deg, ${AppColors.primaryGreen || '#1a5d44'}, #2a8d68)` }}>
                             <h2 className="fw-bold mb-2">إعداد الملف الشخصي</h2>
                             <p className="opacity-75 mb-4">خطوات بسيطة لتنضم لزملائك في جامعة الزيتونة</p>
                             <div className="d-flex justify-content-center gap-2">
@@ -185,7 +183,7 @@ export const SetupProfile = () => {
                                             <div className="rounded-circle border-4 border-white overflow-hidden bg-light" style={{ width: '110px', height: '110px' }}>
                                                 {imagePreview ? <img src={imagePreview} className="w-100 h-100 object-fit-cover" alt="preview" /> : <i className="bi bi-person-circle text-muted" style={{ fontSize: '3.5rem' }}></i>}
                                             </div>
-                                            <label className="btn btn-success position-absolute bottom-0 start-0 rounded-circle shadow-sm p-1 px-2" style={{ background: mainGreen, cursor: 'pointer' }}>
+                                            <label className="btn btn-success position-absolute bottom-0 start-0 rounded-circle shadow-sm p-1 px-2" style={{ background: AppColors.primaryGreen || '#1a5d44', cursor: 'pointer' }}>
                                                 <i className="bi bi-pencil-square" style={{ fontSize: '0.8rem' }}></i>
                                                 <input type="file" hidden onChange={handleImageChange} />
                                             </label>
@@ -207,7 +205,7 @@ export const SetupProfile = () => {
                                             </div>
                                         </div>
                                     </div>
-                                    <button onClick={nextStep} className="btn btn-success w-100 mt-5 py-3 fw-bold rounded-3 shadow-sm" style={{ background: mainGreen }}>الذهاب للخطوة التالية</button>
+                                    <button onClick={nextStep} className="btn btn-success w-100 mt-5 py-3 fw-bold rounded-3 shadow-sm" style={{ background: AppColors.primaryGreen || '#1a5d44' }}>الذهاب للخطوة التالية</button>
                                 </div>
                             )}
 
@@ -243,7 +241,7 @@ export const SetupProfile = () => {
                                     </div>
                                     <div className="d-flex gap-3">
                                         <button onClick={() => setStep(1)} className="btn btn-outline-secondary flex-grow-1 py-3 rounded-3">السابق</button>
-                                        <button onClick={() => setStep(3)} className="btn btn-success flex-grow-1 py-3 fw-bold rounded-3 shadow-sm" style={{ background: mainGreen }}>تأكيد</button>
+                                        <button onClick={() => setStep(3)} className="btn btn-success flex-grow-1 py-3 fw-bold rounded-3 shadow-sm" style={{ background: AppColors.primaryGreen || '#1a5d44' }}>تأكيد</button>
                                     </div>
                                 </div>
                             )}
@@ -259,7 +257,7 @@ export const SetupProfile = () => {
                                     </div>
                                     <div className="d-flex gap-3 mt-4">
                                         <button onClick={() => setStep(2)} className="btn btn-light flex-grow-1 py-3 border">مراجعة</button>
-                                        <button onClick={verifyAndSubmit} className="btn btn-success flex-grow-1 py-3 fw-bold shadow" style={{ background: mainGreen }} disabled={loading}>
+                                        <button onClick={verifyAndSubmit} className="btn btn-success flex-grow-1 py-3 fw-bold shadow" style={{ background: AppColors.primaryGreen || '#1a5d44' }} disabled={loading}>
                                             {loading ? <span className="spinner-border spinner-border-sm me-2"></span> : 'انطلاق الآن!'}
                                         </button>
                                     </div>

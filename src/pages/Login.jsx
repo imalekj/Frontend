@@ -2,14 +2,12 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import zujLogo from '../assets/logo.png';
-
 import { useAuth } from '../context/AuthContext';
+import { AppColors } from '../theme/AppColors';
 
 export const Login = () => {
     const navigate = useNavigate();
     const { login } = useAuth();
-
-    const mainGreen = '#1a5d44';
     const baseUrl = import.meta.env.VITE_API_BASE_URL;
     const [credentials, setCredentials] = useState({ identifier: '', password: '' });
     const [showPassword, setShowPassword] = useState(false);
@@ -22,15 +20,12 @@ export const Login = () => {
     const handleLogin = async (e) => {
         e.preventDefault();
         setIsLoading(true);
-
-
-
         try {
             const response = await fetch(`${baseUrl}api/Login/login`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    "ngrok-skip-browser-warning": "true"  // ← أضف هذا
+                    "ngrok-skip-browser-warning": "true"
                 },
                 body: JSON.stringify({
                     identifier: credentials.identifier,
@@ -41,7 +36,6 @@ export const Login = () => {
             const data = await response.json();
 
             if (response.ok) {
-
                 login(data.token, data.user);
                 Swal.fire({
                     title: 'أهلاً بك مجدداً!',
@@ -50,7 +44,7 @@ export const Login = () => {
                     timer: 2000,
                     showConfirmButton: false,
                     timerProgressBar: true,
-                    confirmButtonColor: mainGreen
+                    confirmButtonColor: AppColors.primaryGreen
                 }).then(() => {
                     navigate('/');
                 });
@@ -59,7 +53,7 @@ export const Login = () => {
                     icon: 'error',
                     title: 'خطأ في الدخول',
                     text: data.message || 'البيانات المدخلة غير صحيحة',
-                    confirmButtonColor: mainGreen
+                    confirmButtonColor: AppColors.primaryGreen
                 });
             }
         } catch (err) {
@@ -68,7 +62,7 @@ export const Login = () => {
                 icon: 'error',
                 title: 'حدث خطأ',
                 text: 'فشل الاتصال بالخادم، يرجى المحاولة لاحقاً',
-                confirmButtonColor: mainGreen
+                confirmButtonColor: AppColors.primaryGreen
             });
         } finally {
             setIsLoading(false);
@@ -82,7 +76,7 @@ export const Login = () => {
                     .swal2-popup { font-family: 'Cairo', sans-serif !important; }
                     .login-input:focus {
                         background-color: #fff !important;
-                        border: 1px solid ${mainGreen} !important;
+                        border: 1px solid ${AppColors.primaryGreen} !important;
                         box-shadow: 0 0 10px rgba(26, 93, 68, 0.1) !important;
                     }
                     .zuj-card { transition: 0.4s; border: 1px solid #eee !important; }
@@ -97,7 +91,7 @@ export const Login = () => {
                     }
                     .btn-login {
                         transition: 0.3s;
-                        background-color: ${mainGreen};
+                        background-color: ${AppColors.primaryGreen};
                     }
                     .btn-login:hover {
                         filter: brightness(1.2);
@@ -110,7 +104,6 @@ export const Login = () => {
             <div className="row justify-content-center align-items-center" style={{ minHeight: '90vh' }}>
                 <div className="col-md-6 col-lg-4">
                     <div className="card zuj-card shadow-lg border-0 p-4 p-md-5 text-center bg-white rounded-5">
-
                         <div className="mb-4">
                             <img
                                 src={zujLogo}
@@ -121,7 +114,7 @@ export const Login = () => {
                             />
                         </div>
 
-                        <h3 className="fw-900 mb-1" style={{ color: mainGreen }}>مرحباً بك مجدداً</h3>
+                        <h3 className="fw-900 mb-1" style={{ color: AppColors.primaryGreen }}>مرحباً بك مجدداً</h3>
                         <p className="text-muted small fw-bold mb-4">سجل دخولك للوصول إلى فريقك الدراسي</p>
 
                         <form onSubmit={handleLogin} className="text-end">
@@ -185,7 +178,7 @@ export const Login = () => {
                         <hr className="my-4 opacity-25" />
 
                         <p className="small text-muted mb-0">
-                            تواجه مشكلة؟ <a href="mailto:support@zuj.edu.jo" className="text-decoration-none" style={{ color: mainGreen }}>اتصل بالدعم الفني</a>
+                            تواجه مشكلة؟ <a href="mailto:support@zuj.edu.jo" className="text-decoration-none" style={{ color: AppColors.primaryGreen }}>اتصل بالدعم الفني</a>
                         </p>
                     </div>
 

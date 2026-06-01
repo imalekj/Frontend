@@ -1,20 +1,21 @@
-import { apiFetch } from '../api';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import { useAuth } from '../context/AuthContext';
-import React, { useEffect, useState } from 'react';
-import { useLocation, useParams } from 'react-router-dom';
+import { apiFetch } from '../api';
+import { AppColors } from '../theme/AppColors';
+
 export const TeamDetails = () => {
     const navigate = useNavigate();
     const baseUrl = import.meta.env.VITE_API_BASE_URL;
-    const mainGreen = '#1a5d44';
-    const [members, setMembers] = useState([]);
-
+    
     const { state } = useLocation();
     const { teamId } = useParams();
-    const [team, setTeam] = useState(state || null);
+    
+    const [members, setMembers] = useState([]);
     const [count, setCount] = useState(0);
     const { user, token } = useAuth();
+
     useEffect(() => {
         const fetchMembers = async () => {
             try {
@@ -32,20 +33,32 @@ export const TeamDetails = () => {
                 }
 
                 const data = await res.json();
-                setMembers(data);
-                setCount(data.length);
+                
+                if (Array.isArray(data)) {
+                    setMembers(data);
+                    setCount(data.length);
+                } else if (data && Array.isArray(data.data)) {
+                    setMembers(data.data);
+                    setCount(data.data.length);
+                } else {
+                    setMembers([]);
+                    setCount(0);
+                }
             } catch (error) {
                 console.error(error);
+                setMembers([]);
+                setCount(0);
                 Swal.fire('خطأ', 'فشل تحميل أعضاء الفريق', 'error');
             }
         };
 
-        fetchMembers();
-    }, []);
+        if (teamId) {
+            fetchMembers();
+        }
+    }, [teamId, baseUrl, token]);
 
-
-    
-    const isCurrentUserOwner = members.find(m => m.id === user?.id)?.role === "Manger";
+    const safeMembers = Array.isArray(members) ? members : [];
+    const isCurrentUserOwner = safeMembers.find(m => m.id === user?.id)?.role === "Manger";
 
     const getDefaultAvatar = (seed) => `https://api.dicebear.com/7.x/identicon/svg?seed=${seed}`;
 
@@ -64,7 +77,7 @@ export const TeamDetails = () => {
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#d33',
-            cancelButtonColor: mainGreen,
+            cancelButtonColor: AppColors.primaryGreen || '#1a5d44',
             confirmButtonText: 'نعم، غادر الفريق',
             cancelButtonText: 'إلغاء',
             reverseButtons: true
@@ -72,7 +85,7 @@ export const TeamDetails = () => {
             if (result.isConfirmed) {
                 try {
                     const res = await apiFetch(
-                        `${baseUrl}api/PostRequests/UnsubscribeToProject?Projectid=${state?.projectId}`,
+                        `${baseUrl}api/PostRequests/UnsubscribeToProject?Projectid=${state?.projectId || teamId}`,
                         {
                             method: "DELETE",
                             headers: {
@@ -100,17 +113,17 @@ export const TeamDetails = () => {
             }
         });
     };
+
     return (
         <div className="container py-5 text-end" dir="rtl" style={{ fontFamily: 'Cairo, sans-serif' }}>
-
             <style>
                 {`
                     .detail-card { border-radius: 25px; border: none; overflow: hidden; }
-                    .status-badge { background: #e8f5e9; color: ${mainGreen}; padding: 5px 15px; border-radius: 10px; font-size: 0.8rem; font-weight: bold; }
+                    .status-badge { background: #e8f5e9; color: ${AppColors.primaryGreen || '#1a5d44'}; padding: 5px 15px; border-radius: 10px; font-size: 0.8rem; font-weight: bold; }
                     .member-item { transition: 0.3s; border-radius: 15px; border: 1px solid #f0f0f0; cursor: pointer; }
-                    .member-item:hover { background: #f8f9fa; transform: translateY(-3px); border-color: ${mainGreen}; }
+                    .member-item:hover { background: #f8f9fa; transform: translateY(-3px); border-color: ${AppColors.primaryGreen || '#1a5d44'}; }
                     .link-box { background: #f8f9fa; border-radius: 15px; padding: 15px; transition: 0.3s; text-decoration: none; color: inherit; display: block; }
-                    .link-box:hover { background: #eef2f0; border-color: ${mainGreen}; }
+                    .link-box:hover { background: #eef2f0; border-color: ${AppColors.primaryGreen || '#1a5d44'}; }
                     .btn-action { border-radius: 15px; transition: 0.3s; }
                     .btn-action:hover { opacity: 0.9; transform: scale(1.02); }
                 `}
@@ -121,51 +134,47 @@ export const TeamDetails = () => {
                     <div className="card detail-card shadow-sm p-4 p-md-5 bg-white">
                         <div className="d-flex justify-content-between align-items-start mb-4">
                             <div>
-                                <span className="status-badge mb-2 d-inline-block">{state?.status}</span>
-                                <h2 className="fw-900 mb-2">{state?.name}</h2>
-                                <p className="text-muted"><i className="bi bi-mortarboard me-1"></i> تخصص {state?.projectType}</p>
+                                <span className="status-badge mb-2 d-inline-block">
+                                    {(state?.status === 'active' || state?.Status === 'active') ? 'نشط' : 'مكتمل'}
+                                </span>
+                                <h2 className="fw-900 mb-2">{state?.name || state?.Name}</h2>
+                                <p className="text-muted"><i className="bi bi-mortarboard me-1"></i> تخصص {state?.projectType || state?.ProjectType}</p>
                             </div>
                             <div className="text-start">
-                                <span className="badge bg-light text-dark p-2 rounded-3">ID: {state?.projectId}</span>
+                                <span className="badge bg-light text-dark p-2 rounded-3">ID: {state?.projectId || teamId}</span>
                             </div>
                         </div>
 
                         <h5 className="fw-bold mb-3">وصف المشروع</h5>
-                        <p className="text-secondary leading-loose mb-5">{state?.description}</p>
+                        <p className="text-secondary leading-loose mb-5">{state?.description || state?.Description}</p>
 
                         <h5 className="fw-bold mb-4">أعضاء الفريق ({count})</h5>
                         <div className="row g-3">
-                            {members.map(member => (
-                                <div key={member.fullName} className="col-md-6">
+                            {safeMembers.map(member => (
+                                <div key={member.id || member.fullName} className="col-md-6">
                                     <div
                                         className="member-item p-3 d-flex align-items-center gap-3"
                                         onClick={() => navigate(`/profile/${member.id}`)}
                                     >
                                         <img
                                             src={member.imagePath
-                                                ? `https://localhost:7011${member.imagePath}`
-                                                : getDefaultAvatar(member.id)
+                                                ? `${baseUrl.replace(/\/$/, '')}${member.imagePath}`
+                                                : getDefaultAvatar(member.id || member.fullName)
                                             }
-                                            style={{ width: '50px', height: '50px', borderRadius: '12px' }}
+                                            style={{ width: '50px', height: '50px', borderRadius: '12px', objectFit: 'cover' }}
                                             alt="avatar"
                                         />
                                         <div>
                                             <h6 className="fw-bold mb-0">
                                                 {member.fullName}
-
                                                 {member.id === user?.id && (
-                                                    <span className="ms-2 badge bg-info text-white small">
-                                                        أنت
-                                                    </span>
+                                                    <span className="ms-2 badge bg-info text-white small">أنت</span>
                                                 )}
-
                                                 {member.role === "Manger" && (
-                                                    <span className="ms-2 badge bg-warning text-dark small">
-                                                        قائد
-                                                    </span>
+                                                    <span className="ms-2 badge bg-warning text-dark small">قائد</span>
                                                 )}
                                             </h6>
-                                            <small className="text-muted">{member.role}</small>
+                                            <small className="text-muted">{member.role === "Manger" ? "مدير الفريق" : "عضو فريق"}</small>
                                         </div>
                                     </div>
                                 </div>
@@ -177,7 +186,7 @@ export const TeamDetails = () => {
                 <div className="col-lg-4">
                     <div className="card detail-card shadow-sm p-4 bg-white mb-4 border-0">
                         <h5 className="fw-bold mb-4">روابط سريعة</h5>
-                        <a href={""} target="_blank" rel="noreferrer" className="link-box mb-3 border">
+                        <a href={state?.githubUrl || "#"} target="_blank" rel="noreferrer" className="link-box mb-3 border">
                             <div className="d-flex align-items-center">
                                 <i className="bi bi-github fs-3 me-3"></i>
                                 <div>
@@ -194,20 +203,11 @@ export const TeamDetails = () => {
                         <button
                             className="btn w-100 py-3 mb-3 fw-bold shadow-sm btn-action text-white"
                             style={{ background: '#2c3e50' }}
-                            onClick={() => navigate(`/todo-list/${state?.projectId}`)}
+                            onClick={() => navigate(`/todo-list/${state?.projectId || teamId}`)}
                         >
                             <i className="bi bi-check2-square me-2"></i> قائمة مهام الفريق
                         </button>
 
-                        <button
-                            className="btn w-100 py-3 mb-3 fw-bold shadow-sm btn-action"
-                            style={{ background: mainGreen, color: 'white' }}
-                            onClick={() => navigate(`/evaluate/${state?.projectId}`, { state: members })}
-                        >
-                            <i className="bi bi-star-fill me-2"></i> تقييم أعضاء الفريق
-                        </button>
-
-                        {/* زر المغادرة يظهر للجميع ولكن بآلية تحقق مختلفة للقائد */}
                         <button
                             className="btn btn-outline-danger w-100 py-3 fw-bold btn-action"
                             onClick={handleLeaveTeam}
@@ -217,7 +217,9 @@ export const TeamDetails = () => {
 
                         <hr className="my-4 opacity-25" />
                         <div className="text-center">
-                            <small className="text-muted small">تاريخ الإنشاء: {state?.createdAt}</small>
+                            <small className="text-muted small">
+                                تاريخ الإنشاء: {state?.createdAt ? new Date(state.createdAt).toLocaleDateString() : 'غير محدد'}
+                            </small>
                         </div>
                     </div>
                 </div>

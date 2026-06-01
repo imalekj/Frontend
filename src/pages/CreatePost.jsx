@@ -2,15 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import { apiFetch } from '../api';
+import { AppColors } from '../theme/AppColors';
+
 export const CreatePost = () => {
     const navigate = useNavigate();
-    const mainGreen = '#1a5d44';
     const baseUrl = import.meta.env.VITE_API_BASE_URL;
     const [isAuthorized, setIsAuthorized] = useState(false);
+    
     const [formData, setFormData] = useState({
         title: '',
         category: 'مسابقة',
-        participationType: 'فردي',
+        faculty: 'العلوم وتكنولوجيا المعلومات',
+        participationType: 'فريق',
         maxMembers: 3,
         deadline: '',
         prize: '',
@@ -24,17 +27,25 @@ export const CreatePost = () => {
         if (!user) {
             navigate('/login');
         } else {
-
             setIsAuthorized(true);
         }
     }, [navigate]);
 
     const categories = [
         { id: 'comp', label: 'مسابقة', icon: 'trophy' },
-        { id: 'proj', label: 'مشروع', icon: 'mortarboard' },
-        { id: 'hack', label: 'هاكاثون', icon: 'code-slash' }
+        { id: 'proj', label: 'مشروع', icon: 'mortarboard' }
     ];
 
+    const faculties = [
+        'العلوم وتكنولوجيا المعلومات',
+        'الهندسة والتكنولوجيا',
+        'الصيدلة',
+        'التمريض',
+        'الآداب',
+        'الأعمال',
+        'الحقوق',
+        'العمارة والتصميم'
+    ];
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -51,7 +62,7 @@ export const CreatePost = () => {
                 icon: 'error',
                 title: 'التاريخ غير منطقي',
                 text: 'يرجى اختيار تاريخ موعد نهائي في المستقبل.',
-                confirmButtonColor: mainGreen,
+                confirmButtonColor: AppColors.primaryGreen,
             });
         }
 
@@ -62,17 +73,19 @@ export const CreatePost = () => {
                 didOpen: () => Swal.showLoading(),
             });
 
+            const isProject = formData.category === "مشروع";
 
             const dataToSend = {
                 name: formData.title,
                 descriptions: formData.content,
                 rating: "0",
-                isGraduationProject: formData.category === "مشروع",
+                isGraduationProject: isProject, 
                 endDate: new Date(formData.deadline).toISOString(),
                 skills: formData.skills,
-                availableSeats: formData.participationType === "فريق" ? formData.maxMembers : 1,
-                projectLocation: formData.location,
-                teamType: formData.participationType,
+                // إذا كان مشروع، نعتمد عدد الأعضاء مباشرة، وإذا مسابقة نتحقق من نوع المشاركة
+                availableSeats: isProject ? formData.maxMembers : (formData.participationType === "فريق" ? formData.maxMembers : 1),
+                projectLocation: formData.faculty, 
+                teamType: isProject ? "فريق" : formData.participationType,
                 numberOfAvailableSeats: formData.maxMembers
             };
 
@@ -91,7 +104,7 @@ export const CreatePost = () => {
             Swal.fire({
                 icon: 'success',
                 title: 'تم النشر بنجاح!',
-                confirmButtonColor: mainGreen,
+                confirmButtonColor: AppColors.primaryGreen,
             }).then(() => {
                 navigate('/competitions');
             });
@@ -103,7 +116,7 @@ export const CreatePost = () => {
                 icon: 'error',
                 title: 'فشل النشر',
                 text: 'حدث خطأ أثناء إرسال البيانات',
-                confirmButtonColor: mainGreen,
+                confirmButtonColor: AppColors.primaryGreen,
             });
         }
     };
@@ -115,8 +128,8 @@ export const CreatePost = () => {
                 text: "لديك تغييرات غير محفوظة، هل أنت متأكد من الخروج؟",
                 icon: 'warning',
                 showCancelButton: true,
-                confirmButtonColor: '#d33',
-                cancelButtonColor: mainGreen,
+                confirmButtonColor: AppColors.colorRed,
+                cancelButtonColor: AppColors.primaryGreen,
                 confirmButtonText: 'نعم، اخرج',
                 cancelButtonText: 'إكمال الكتابة',
                 reverseButtons: true,
@@ -137,21 +150,22 @@ export const CreatePost = () => {
         <div className="container py-4 text-end" dir="rtl" style={{ fontFamily: 'Cairo, sans-serif' }}>
             <style>
                 {`
-                    .mini-card { max-width: 580px; margin: 0 auto; border-radius: 25px; border: none; }
-                    .header-mini { background: ${mainGreen}; color: white; padding: 15px; border-radius: 25px 25px 0 0; }
+                    .mini-card { max-width: 580px; margin: 0 auto; border-radius: 25px; border: none; background: ${AppColors.backgroundCard}; }
+                    .header-mini { background: ${AppColors.primaryGreen}; color: white; padding: 15px; border-radius: 25px 25px 0 0; }
                     .category-btn { 
-                        cursor: pointer; border: 1.5px solid #f0f0f0; border-radius: 12px; 
-                        padding: 6px; transition: 0.2s; flex: 1; text-align: center; font-size: 0.75rem; background: white;
+                        cursor: pointer; border: 1.5px solid ${AppColors.borderInput}; border-radius: 12px; 
+                        padding: 12px; transition: 0.2s; flex: 1; text-align: center; font-size: 0.85rem; background: ${AppColors.backgroundCard};
+                        color: ${AppColors.textSecondary};
                     }
-                    .category-btn.active { background: ${mainGreen}; color: white; border-color: ${mainGreen}; }
-                    .form-label { font-size: 0.75rem; font-weight: 800; color: ${mainGreen}; margin-bottom: 4px; margin-top: 8px; }
+                    .category-btn.active { background: ${AppColors.primaryGreen}; color: white; border-color: ${AppColors.primaryGreen}; }
+                    .form-label { font-size: 0.75rem; font-weight: 800; color: ${AppColors.primaryGreen}; margin-bottom: 4px; margin-top: 8px; }
                     .compact-input { 
-                        background: #fdfdfd; border: 1.5px solid #eee; border-radius: 10px; 
-                        padding: 8px 12px; font-size: 0.85rem; transition: 0.3s;
+                        background: ${AppColors.backgroundScreenLight}; border: 1.5px solid ${AppColors.borderInput}; border-radius: 10px; 
+                        padding: 8px 12px; font-size: 0.85rem; transition: 0.3s; color: ${AppColors.textPrimary};
                     }
-                    .compact-input:focus { border-color: ${mainGreen}; box-shadow: 0 0 0 3px rgba(26, 93, 68, 0.05); outline: none; }
-                    .btn-publish { background: ${mainGreen}; color: white; border-radius: 10px; padding: 10px; font-weight: 700; border: none; width: 100%; transition: 0.3s; }
-                    .btn-publish:hover { opacity: 0.9; transform: scale(1.02); }
+                    .compact-input:focus { border-color: ${AppColors.primaryGreen}; box-shadow: 0 0 0 3px rgba(27, 94, 56, 0.05); outline: none; background: ${AppColors.backgroundCard}; }
+                    .btn-publish { background: ${AppColors.primaryGreen}; color: white; border-radius: 10px; padding: 10px; font-weight: 700; border: none; width: 100%; transition: 0.3s; }
+                    .btn-publish:hover { background: ${AppColors.primaryDark}; transform: scale(1.02); }
                     .swal2-popup { font-family: 'Cairo', sans-serif !important; }
                 `}
             </style>
@@ -164,13 +178,13 @@ export const CreatePost = () => {
                 <div className="card-body p-3 p-md-4">
                     <form onSubmit={handleSubmit}>
                         <div className="mb-2">
-                            <label className="form-label">نوع المنشور</label>
-                            <div className="d-flex gap-2">
+                            <label className="form-label">نوع المنشور (التصنيف)</label>
+                            <div className="d-flex gap-3">
                                 {categories.map((cat) => (
                                     <div key={cat.id}
                                         className={`category-btn ${formData.category === cat.label ? 'active' : ''}`}
                                         onClick={() => setFormData({ ...formData, category: cat.label })}>
-                                        <i className={`bi bi-${cat.icon} d-block mb-1 fs-6`}></i>
+                                        <i className={`bi bi-${cat.icon} d-block mb-1 fs-5`}></i>
                                         <span className="fw-bold">{cat.label}</span>
                                     </div>
                                 ))}
@@ -179,57 +193,75 @@ export const CreatePost = () => {
 
                         <div className="row g-2">
                             <div className="col-12">
+                                <label className="form-label">الكلية المستهدفة</label>
+                                <select name="faculty" className="form-select compact-input"
+                                    value={formData.faculty} onChange={handleChange}>
+                                    {faculties.map((fac, idx) => (
+                                        <option key={idx} value={fac}>{fac}</option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div className="col-12">
                                 <label className="form-label">العنوان الرئيسي</label>
-                                <input name="title" type="text" className="form-control compact-input" placeholder="مثلاً: مسابقة البرمجة السنوية"
+                                <input name="title" type="text" className="form-control compact-input" placeholder={formData.category === 'مشروع' ? "مثلاً: مشروع تخرج نظام ذكي" : "مثلاً: مسابقة البرمجة السنوية"}
                                     required value={formData.title} onChange={handleChange} />
                             </div>
 
-                            <div className="col-md-6">
-                                <label className="form-label text-danger">الموعد النهائي</label>
+                            <div className="col-12">
+                                <label className="form-label" style={{ color: AppColors.colorRed }}>الموعد النهائي للنشر / التسجيل</label>
                                 <input name="deadline" type="date" className="form-control compact-input"
                                     required value={formData.deadline} onChange={handleChange} />
                             </div>
-                            <div className="col-md-6">
-                                <label className="form-label">الجائزة / المحفز (إن وجد)</label>
-                                <input name="prize" type="text" className="form-control compact-input" placeholder="مكافأة، شهادة، مبلغ.."
-                                    value={formData.prize} onChange={handleChange} />
-                            </div>
 
-                            <div className="col-md-6">
-                                <label className="form-label">طريقة المشاركة</label>
-                                <select name="participationType" className="form-select compact-input"
-                                    value={formData.participationType} onChange={handleChange}>
-                                    <option value="فردي">فردي فقط</option>
-                                    <option value="فريق">فريق عمل</option>
-                                </select>
-                            </div>
-                            <div className="col-md-6">
-                                <label className="form-label">مكان المسابقة / العمل</label>
-                                <select name="location" className="form-select compact-input"
-                                    value={formData.location} onChange={handleChange}>
-                                    <option value="أونلاين">أونلاين</option>
-                                    <option value="داخل الحرم الجامعي">داخل الحرم الجامعي</option>
-                                    <option value="مختبر الحاسوب">مختبر الحاسوب</option>
-                                </select>
-                            </div>
+                            {/* تظهر هذه الحقول فقط إذا كان المنشور "مسابقة" ويتم إخفاؤها في حال كان "مشروع" */}
+                            {formData.category !== 'مشروع' && (
+                                <>
+                                    <div className="col-12">
+                                        <label className="form-label">الجائزة / المحفز (إن وجد)</label>
+                                        <input name="prize" type="text" className="form-control compact-input" placeholder="مكافأة، شهادة، مبلغ.."
+                                            value={formData.prize} onChange={handleChange} />
+                                    </div>
 
-                            {formData.participationType === 'فريق' && (
-                                <div className="col-12 animate__animated animate__fadeIn">
-                                    <label className="form-label">الحد الأقصى لأعضاء الفريق</label>
+                                    <div className="col-md-6">
+                                        <label className="form-label">طريقة المشاركة</label>
+                                        <select name="participationType" className="form-select compact-input"
+                                            value={formData.participationType} onChange={handleChange}>
+                                            <option value="فردي">فردي فقط</option>
+                                            <option value="فريق">فريق عمل</option>
+                                        </select>
+                                    </div>
+                                    <div className="col-md-6">
+                                        <label className="form-label">مكان المسابقة / العمل</label>
+                                        <select name="location" className="form-select compact-input"
+                                            value={formData.location} onChange={handleChange}>
+                                            <option value="أونلاين">أونلاين</option>
+                                            <option value="داخل الحرم الجامعي">داخل الحرم الجامعي</option>
+                                            <option value="مختبر الحاسوب">مختبر الحاسوب</option>
+                                        </select>
+                                    </div>
+                                </>
+                            )}
+
+                            {/* يظهر حقل عدد الأعضاء دائماً للمشروع، ويظهر للمسابقة فقط إذا كانت المشاركة بنظام فريق */}
+                            {(formData.category === 'مشروع' || formData.participationType === 'فريق') && (
+                                <div className="col-12">
+                                    <label className="form-label">الحد الأقصى لأعضاء الفريق (عدد الأعضاء)</label>
                                     <input name="maxMembers" type="number" min="2" className="form-control compact-input"
                                         value={formData.maxMembers} onChange={handleChange} />
                                 </div>
                             )}
 
                             <div className="col-12">
-                                <label className="form-label">وصف الإعلان</label>
-                                <textarea name="content" className="form-control compact-input" rows="2" placeholder="اكتب نبذة مختصرة..."
+                                <label className="form-label">نبذة عن الإعلان (الوصف)</label>
+                                <textarea name="content" className="form-control compact-input" rows="3" placeholder="اكتب نبذة مختصرة عن المشروع أو المسابقة..."
                                     required value={formData.content} onChange={handleChange}></textarea>
                             </div>
 
                             <div className="col-12">
                                 <label className="form-label">الشروط والمهارات المطلوبة</label>
-                                <textarea name="skills" className="form-control compact-input border-success-subtle" rows="2" placeholder="مهارات محددة، معدل معين، إلخ..."
+                                <textarea name="skills" className="form-control compact-input" rows="3" placeholder="مهارات محددة، لغات برمجة، شروط معينة إلخ..."
+                                    style={{ borderColor: AppColors.borderInput }}
                                     value={formData.skills} onChange={handleChange}></textarea>
                             </div>
                         </div>
@@ -238,7 +270,9 @@ export const CreatePost = () => {
                             <button type="submit" className="btn-publish order-md-2 shadow-sm">
                                 نشر الآن <i className="bi bi-rocket-takeoff ms-1"></i>
                             </button>
-                            <button type="button" className="btn btn-light rounded-3 px-4 fw-bold border order-md-1" onClick={handleCancel}>
+                            <button type="button" className="btn btn-light rounded-3 px-4 fw-bold border order-md-1" 
+                                style={{ backgroundColor: AppColors.backgroundScreenLight, color: AppColors.textSecondary, borderColor: AppColors.borderInput }} 
+                                onClick={handleCancel}>
                                 إلغاء
                             </button>
                         </div>

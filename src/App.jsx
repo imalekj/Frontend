@@ -24,7 +24,6 @@ import { UserProfile } from './pages/UserProfile';
 import { EditProfile } from './pages/EditProfile';
 import { Notifications } from './pages/Notifications';
 import { Leaderboard } from './pages/Leaderboard';
-import { TeamEvaluation } from './pages/TeamEvaluation';
 import { MyTeams } from './pages/MyTeams';
 import { TeamDetails } from './pages/TeamDetails';
 import { TodoListPage } from './pages/TodoListPage';
@@ -71,7 +70,6 @@ function App() {
                 <Route path="/my-teams" element={<ProtectedRoute><MyTeams /></ProtectedRoute>} />
                 <Route path="/team-details/:teamId" element={<ProtectedRoute><TeamDetails /></ProtectedRoute>} />
                 <Route path="/manage-requests/:id" element={<ProtectedRoute><RequestsPage /></ProtectedRoute>} />
-                <Route path="/evaluate/:teamId" element={<ProtectedRoute><TeamEvaluation /></ProtectedRoute>} />
                 <Route path="/todo-list/:teamId" element={<ProtectedRoute><TodoListPage /></ProtectedRoute>} />
 
                 <Route path="/404" element={<div className="text-center py-5"><h1>404</h1><p>الصفحة غير موجودة</p></div>} />

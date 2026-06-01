@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext'; 
 import { apiFetch } from '../api';
+import { AppColors } from '../theme/AppColors';
+
 export const UserProfile = () => {
     const { userId } = useParams();
     const navigate = useNavigate();
     const { user: currentUser } = useAuth();
-    const mainGreen = '#1a5d44';
+    const mainGreen = AppColors.primaryGreen || '#1a5d44';
 
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -14,49 +16,45 @@ export const UserProfile = () => {
     
     const isOwnProfile = currentUser?.id === parseInt(userId) || currentUser?.id === userId;
 
- useEffect(() => {
-    const fetchUserData = async () => {
-        try {
-            setLoading(true);
+    useEffect(() => {
+        const fetchUserData = async () => {
+            try {
+                setLoading(true);
 
-            // استدعاء الـ API
-            const response = await apiFetch(`${baseUrl}api/Login/GetUserInfo/${userId}`);
-            
-            if (!response.ok) {
-                throw new Error("فشل في جلب البيانات");
-            }
+                const response = await apiFetch(`${baseUrl}api/Login/GetUserInfo/${userId}`);
+                
+                if (!response.ok) {
+                    throw new Error("فشل في جلب البيانات");
+                }
 
-            const data = await response.json();
+                const data = await response.json();
 
-            // خلي الـ setTimeout زي ما هو
-            setTimeout(() => {
-                const formattedData = {
-                    id: data.id,
-                    name: data.fullName || data.name,
-                    role: data.role || "غير محدد",
-                    githubUrl: data.githubUrl || "",
-                    bio: data.bio || "",
-                    rating: data.rating || 0,
-                    stats: data.stats || { competitions: 0, wins: 0, teams: 0 },
-                    skills: data.skills || [],
-                    previousWork: data.previousWork || [],
-                    activeCompetitions: data.activeCompetitions || []
-                    ,imagePath: data.imagePath
-                };
-                    
-                setUser(formattedData);
+                setTimeout(() => {
+                    const formattedData = {
+                        id: data.id,
+                        name: data.fullName || data.name,
+                        role: data.role || "غير محدد",
+                        githubUrl: data.githubUrl || "",
+                        bio: data.bio || "",
+                        stats: data.stats || { competitions: 0, wins: 0, teams: 0 },
+                        skills: data.skills || [],
+                        previousWork: data.previousWork || [],
+                        activeCompetitions: data.activeCompetitions || [],
+                        imagePath: data.imagePath
+                    };
+                        
+                    setUser(formattedData);
+                    setLoading(false);
+                }, 800);
 
+            } catch (error) {
+                console.error("Error fetching user:", error);
                 setLoading(false);
-            }, 800);
+            }
+        };
 
-        } catch (error) {
-            console.error("Error fetching user:", error);
-            setLoading(false);
-        }
-    };
-
-    fetchUserData();
-}, [userId, currentUser, isOwnProfile]);
+        fetchUserData();
+    }, [userId, currentUser, isOwnProfile, baseUrl]);
 
     if (loading) return (
         <div className="d-flex justify-content-center align-items-center min-vh-100">
@@ -71,7 +69,7 @@ export const UserProfile = () => {
             <style>
                 {`
                     .profile-container { max-width: 1100px; margin: 0 auto; }
-                    .main-card { border-radius: 20px; border: none; background: white; padding: 25px; overflow: hidden; }
+                    .main-card { border-radius: 20px; border: none; background: white; padding: 25px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
                     .header-gradient { 
                         background: linear-gradient(135deg, ${mainGreen} 0%, #2d8a67 100%);
                         margin: -25px -25px 80px -25px;
@@ -89,11 +87,6 @@ export const UserProfile = () => {
                         object-fit: cover;
                     }
                     .info-section { margin-top: 10px; }
-                    .rating-badge {
-                        background: #fff9db; color: #f08c00;
-                        padding: 6px 14px; border-radius: 10px;
-                        font-size: 0.85rem; font-weight: 700; display: inline-flex; align-items: center; gap: 5px;
-                    }
                     .stat-box { 
                         background: #f8fafc; border: 1px solid #f1f5f9; 
                         border-radius: 18px; padding: 15px; transition: 0.3s;
@@ -119,11 +112,11 @@ export const UserProfile = () => {
             <div className="profile-container">
                 <div className="row g-4">
                     <div className="col-lg-4">
-                        <div className="main-card shadow-sm mb-4">
+                        <div className="main-card mb-4">
                             <div className="header-gradient">
                                 <div className="avatar-wrapper">
                                     <img 
-                                      src={`https://localhost:7011${user.imagePath}`}
+                                        src={user.imagePath ? `${baseUrl}${user.imagePath}` : 'default-avatar.png'} 
                                         className="profile-img shadow-sm" 
                                         alt="User" 
                                     />
@@ -134,18 +127,13 @@ export const UserProfile = () => {
                                 <h4 className="fw-bold text-dark mb-1">
                                     {user.name} {isOwnProfile && <span className="badge bg-secondary-subtle text-secondary fs-6 ms-2">أنت</span>}
                                 </h4>
-                                <p className="text-muted small mb-3">{user.role}</p>
-                                
-                                <div className="rating-badge mb-4">
-                                    <i className="bi bi-star-fill"></i> {user.rating} تقييم الزملاء
-                                </div>
+                                <p className="text-muted small mb-4">{user.role}</p>
 
                                 <div className="d-flex gap-2 mb-4">
-                                    {/* إظهار زر تعديل للمالك، أو زر مراسلة للآخرين */}
                                     {isOwnProfile ? (
                                         <button 
                                             className="btn btn-outline-dark rounded-pill px-4 fw-bold flex-grow-1 shadow-sm"
-                                            onClick={() => navigate('/settings')}
+                                            onClick={() => navigate('/edit-profile')}
                                         >
                                             <i className="bi bi-pencil-square me-2"></i> تعديل الملف
                                         </button>
@@ -159,22 +147,28 @@ export const UserProfile = () => {
                                         </button>
                                     )}
                                     
-                                    <a href={user.githubUrl} target="_blank" rel="noopener noreferrer" className="btn-github">
-                                        <i className="bi bi-github fs-5"></i>
-                                    </a>
+                                    {user.githubUrl && (
+                                        <a href={user.githubUrl} target="_blank" rel="noopener noreferrer" className="btn-github">
+                                            <i className="bi bi-github fs-5"></i>
+                                        </a>
+                                    )}
                                 </div>
 
                                 <div className="mb-4">
                                     <h6 className="fw-bold text-dark small mb-2">نبذة تعريفية</h6>
-                                    <p className="text-secondary small lh-base mb-0">{user.bio}</p>
+                                    <p className="text-secondary small lh-base mb-0">{user.bio || "لا توجد نبذة تعريفية مضافة."}</p>
                                 </div>
 
                                 <div>
                                     <h6 className="fw-bold text-dark small mb-2">المهارات</h6>
                                     <div className="d-flex flex-wrap gap-2">
-                                        {user.skills.map(skill => (
-                                            <span key={skill} className="skill-tag">{skill}</span>
-                                        ))}
+                                        {user.skills && user.skills.length > 0 ? (
+                                            user.skills.map(skill => (
+                                                <span key={skill} className="skill-tag">{skill}</span>
+                                            ))
+                                        ) : (
+                                            <span className="text-muted small">لم يتم إضافة مهارات</span>
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -185,63 +179,73 @@ export const UserProfile = () => {
                         <div className="row g-3 mb-4 text-center">
                             <div className="col-4">
                                 <div className="stat-box">
-                                    <h4 className="fw-bold mb-0" style={{ color: mainGreen }}>{user.stats.competitions}</h4>
+                                    <h4 className="fw-bold mb-0" style={{ color: mainGreen }}>{user.stats?.competitions || 0}</h4>
                                     <small className="text-muted fw-600">مسابقة</small>
                                 </div>
                             </div>
                             <div className="col-4">
                                 <div className="stat-box">
-                                    <h4 className="fw-bold mb-0 text-warning">{user.stats.wins}</h4>
+                                    <h4 className="fw-bold mb-0 text-warning">{user.stats?.wins || 0}</h4>
                                     <small className="text-muted fw-600">إنجاز</small>
                                 </div>
                             </div>
                             <div className="col-4">
                                 <div className="stat-box">
-                                    <h4 className="fw-bold mb-0 text-primary">{user.stats.teams}</h4>
+                                    <h4 className="fw-bold mb-0 text-primary">{user.stats?.teams || 0}</h4>
                                     <small className="text-muted fw-600">فريق</small>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="main-card shadow-sm mb-4">
+                        <div className="main-card mb-4">
                             <h6 className="fw-bold mb-4 d-flex align-items-center gap-2">
                                 <i className="bi bi-collection text-success"></i> المشاريع السابقة
                             </h6>
                             <div className="row g-3">
-                                {user.previousWork.map(work => (
-                                    <div key={work.id} className="col-md-6">
-                                        <div className="work-item">
-                                            <h6 className="fw-bold mb-1 small">{work.title}</h6>
-                                            <span className="text-muted" style={{ fontSize: '0.7rem' }}>
-                                                <i className="bi bi-cpu me-1"></i> {work.tech}
-                                            </span>
+                                {user.previousWork && user.previousWork.length > 0 ? (
+                                    user.previousWork.map(work => (
+                                        <div key={work.id} className="col-md-6">
+                                            <div className="work-item">
+                                                <h6 className="fw-bold mb-1 small text-dark">{work.title}</h6>
+                                                <span className="text-muted" style={{ fontSize: '0.7rem' }}>
+                                                    <i className="bi bi-cpu me-1"></i> {work.tech}
+                                                </span>
+                                            </div>
                                         </div>
-                                    </div>
-                                ))}
+                                    ))
+                                ) : (
+                                    <p className="text-muted small text-center py-3 mb-0">لا توجد مشاريع مضافة حالياً</p>
+                                )}
                             </div>
                         </div>
 
-                        <div className="main-card shadow-sm">
+                        <div className="main-card">
                             <h6 className="fw-bold mb-4 d-flex align-items-center gap-2">
                                 <i className="bi bi-activity text-danger"></i> النشاط الحالي
                             </h6>
-                            {user.activeCompetitions.map(comp => (
-                                <div key={comp.id} className="p-3 d-flex justify-content-between align-items-center flex-wrap gap-3 border rounded-4 bg-light bg-opacity-50">
-                                    <div>
-                                        <h6 className="fw-bold mb-1 small">{comp.title}</h6>
-                                        <div className="d-flex gap-3 small" style={{ fontSize: '0.75rem' }}>
-                                            <span className="text-success fw-bold">{comp.role}</span>
-                                            <span className="text-muted"><i className="bi bi-clock me-1"></i> {comp.date}</span>
+                            <div className="d-flex flex-column gap-3">
+                                {user.activeCompetitions && user.activeCompetitions.length > 0 ? (
+                                    user.activeCompetitions.map(comp => (
+                                        <div key={comp.id} className="p-3 d-flex justify-content-between align-items-center flex-wrap gap-3 border rounded-4 bg-light bg-opacity-50">
+                                            <div>
+                                                <h6 className="fw-bold mb-1 small text-dark">{comp.title}</h6>
+                                                <div className="d-flex gap-3 small" style={{ fontSize: '0.75rem' }}>
+                                                    <span className="text-success fw-bold">{comp.role}</span>
+                                                    <span className="text-muted"><i className="bi bi-clock me-1"></i> {comp.date}</span>
+                                                </div>
+                                            </div>
+                                            <button 
+                                                className="btn btn-sm btn-outline-dark rounded-pill px-3 fw-bold"
+                                                onClick={() => navigate(`/competition/${comp.id}`)}
+                                            >
+                                                التفاصيل
+                                            </button>
                                         </div>
-                                    </div>
-                                    <button 
-                                        className="btn btn-sm btn-outline-dark rounded-pill px-3 fw-bold"
-                                        onClick={() => navigate(`/competition/${comp.id}`)}
-                                    >
-                                        التفاصيل
-                                    </button>
-                                </div>
-                            ))}
+                                    ))
+                                ) : (
+                                    <p className="text-muted small text-center py-2 mb-0">لا توجد أنشطة أو مسابقات جارية حالياً</p>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>

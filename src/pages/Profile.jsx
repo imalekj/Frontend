@@ -3,14 +3,15 @@ import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import { useAuth } from '../context/AuthContext'; 
 import { apiFetch } from '../api';
+import { AppColors } from '../theme/AppColors';
+
 export const Profile = () => {
     const navigate = useNavigate();
-    const mainGreen = '#1a5d44';
+    const mainGreen = AppColors.primaryGreen || '#1a5d44';
     const baseUrl = import.meta.env.VITE_API_BASE_URL;
     const { user, isLoggedIn, logout } = useAuth();
 
     useEffect(() => {
-    
         if (!isLoggedIn) {
             navigate('/login');
         }
@@ -30,7 +31,7 @@ export const Profile = () => {
             customClass: { popup: 'rounded-5' }
         }).then((result) => {
             if (result.isConfirmed) {
-                logout(); // استدعاء دالة الخروج من السياق
+                logout(); 
                 navigate('/login');
             }
         });
@@ -70,13 +71,15 @@ export const Profile = () => {
                         background: #f1f5f9; color: #475569; padding: 6px 14px; 
                         border-radius: 8px; font-size: 0.75rem; font-weight: 600;
                     }
-                    .btn-github {
-                        background: #24292e; color: white; border: none;
+                    .social-btn {
                         width: 40px; height: 40px; border-radius: 10px;
                         display: flex; align-items: center; justify-content: center;
-                        transition: 0.3s; text-decoration: none;
+                        transition: 0.3s; text-decoration: none; border: none;
                     }
-                    .btn-github:hover { transform: translateY(-3px); color: white; }
+                    .social-btn:hover { transform: translateY(-3px); color: white; }
+                    .btn-github { background: #24292e; color: white; }
+                    .btn-linkedin { background: #0a66c2; color: white; }
+                    .btn-portfolio { background: #4f46e5; color: white; }
                     .work-item {
                         border-right: 3px solid ${mainGreen};
                         background: #fdfdfd; padding: 12px 15px; border-radius: 8px;
@@ -92,7 +95,6 @@ export const Profile = () => {
                         <div className="main-card mb-4">
                             <div className="header-gradient">
                                 <div className="avatar-wrapper">
-                                
                                     <img src={user.avatar || 'default-avatar.png'} className="profile-img shadow-sm" alt="User" />
                                 </div>
                             </div>
@@ -105,32 +107,65 @@ export const Profile = () => {
                                     <i className="bi bi-person-badge-fill"></i> {user.role === 'student' ? 'حساب طالب' : 'حساب مشرف'}
                                 </div>
 
-                                <div className="d-flex gap-2 mb-4">
+                                <div className="d-flex mb-4">
                                     <button 
-                                        className="btn text-white rounded-pill px-4 fw-bold flex-grow-1 shadow-sm"
+                                        className="btn text-white rounded-pill px-4 fw-bold flex-grow-1 shadow-sm ms-2"
                                         style={{ backgroundColor: mainGreen }}
                                         onClick={() => navigate('/edit-profile')}
                                     >
                                         <i className="bi bi-pencil-square me-2"></i> تعديل البروفايل
                                     </button>
-                                    
-                                    <a href={user.githubUrl} target="_blank" rel="noopener noreferrer" className="btn-github">
-                                        <i className="bi bi-github fs-5"></i>
-                                    </a>
                                 </div>
 
                                 <div className="mb-4 text-end">
-                                    <h6 className="fw-bold text-dark small mb-2">مجال العمل والدراسة</h6>
-                                    <p className="text-secondary small mb-1"><i className="bi bi-briefcase me-2"></i> {user.workField}</p>
-                                    <p className="text-secondary small mb-0"><i className="bi bi-mortarboard me-2"></i> {user.universityMajor}</p>
+                                    <h6 className="fw-bold text-dark small mb-2">البيانات الأكاديمية والمهنية</h6>
+                                    {user.faculty && (
+                                        <p className="text-secondary small mb-1">
+                                            <i className="bi bi-building me-2"></i> {user.faculty}
+                                        </p>
+                                    )}
+                                    <p className="text-secondary small mb-1">
+                                        <i className="bi bi-mortarboard me-2"></i> {user.universityMajor || "غير محدد"}
+                                    </p>
+                                    <p className="text-secondary small mb-0">
+                                        <i className="bi bi-briefcase me-2"></i> {user.workField || "لم يتم تحديد مجال التركيز"}
+                                    </p>
+                                </div>
+
+                                <div className="mb-4 text-end">
+                                    <h6 className="fw-bold text-dark small mb-2">روابط التواصل والمنصات</h6>
+                                    <div className="d-flex flex-wrap gap-2">
+                                        {user.githubUrl && (
+                                            <a href={user.githubUrl} target="_blank" rel="noopener noreferrer" className="social-btn btn-github" title="GitHub">
+                                                <i className="bi bi-github fs-5"></i>
+                                            </a>
+                                        )}
+                                        {user.linkedinUrl && (
+                                            <a href={user.linkedinUrl} target="_blank" rel="noopener noreferrer" className="social-btn btn-linkedin" title="LinkedIn">
+                                                <i className="bi bi-linkedin fs-5"></i>
+                                            </a>
+                                        )}
+                                        {user.portfolioUrl && (
+                                            <a href={user.portfolioUrl} target="_blank" rel="noopener noreferrer" className="social-btn btn-portfolio" title="المعرض الشخصي">
+                                                <i className="bi bi-globe fs-5"></i>
+                                            </a>
+                                        )}
+                                        {!user.githubUrl && !user.linkedinUrl && !user.portfolioUrl && (
+                                            <span className="text-muted small">لم يتم ربط حسابات تواصل بعد</span>
+                                        )}
+                                    </div>
                                 </div>
 
                                 <div className="text-end">
-                                    <h6 className="fw-bold text-dark small mb-2">المهارات التقنية</h6>
+                                    <h6 className="fw-bold text-dark small mb-2">المهارات والاهتمامات التقنية</h6>
                                     <div className="d-flex flex-wrap gap-2">
-                                        {user.skills?.map(skill => (
-                                            <span key={skill} className="skill-tag">{skill}</span>
-                                        ))}
+                                        {user.skills && user.skills.length > 0 ? (
+                                            user.skills.map(skill => (
+                                                <span key={skill} className="skill-tag">{skill}</span>
+                                            ))
+                                        ) : (
+                                            <span className="text-muted small">لم يتم إضافة مهارات بعد</span>
+                                        )}
                                     </div>
                                 </div>
 
@@ -153,41 +188,41 @@ export const Profile = () => {
                             <div className="col-6">
                                 <div className="stat-box">
                                     <h4 className="fw-bold mb-0 text-warning">{user.pastProjects?.length || 0}</h4>
-                                    <small className="text-muted fw-600">مشاريع منجزة</small>
+                                    <small className="text-muted fw-600">أعمال ومشاريع منجزة</small>
                                 </div>
                             </div>
                         </div>
 
                         <div className="main-card mb-4">
                             <h6 className="fw-bold mb-4 d-flex align-items-center gap-2">
-                                <i className="bi bi-collection text-success"></i> المشاريع السابقة
+                                <i className="bi bi-collection text-success"></i> المعرض والأعمال السابقة
                             </h6>
                             <div className="row g-3 text-end">
-                                {user.pastProjects?.length > 0 ? (
+                                {user.pastProjects && user.pastProjects.length > 0 ? (
                                     user.pastProjects.map((project, index) => (
                                         <div key={index} className="col-md-6">
                                             <a href={project.link} target="_blank" rel="noreferrer" className="work-item">
                                                 <h6 className="fw-bold mb-1 small text-dark">{project.title}</h6>
                                                 <span className="text-muted" style={{ fontSize: '0.7rem' }}>
-                                                    <i className="bi bi-link-45deg me-1"></i> عرض على GitHub
+                                                    <i className="bi bi-box-arrow-up-right me-1"></i> عرض تفاصيل العمل
                                                 </span>
                                             </a>
                                         </div>
                                     ))
                                 ) : (
-                                    <p className="text-muted small text-center py-3">لا توجد مشاريع مضافة</p>
+                                    <p className="text-muted small text-center py-3">لا توجد أعمال مضافة حالياً</p>
                                 )}
                             </div>
                         </div>
 
                         <div className="main-card shadow-sm">
                             <h6 className="fw-bold mb-4 d-flex align-items-center gap-2 text-dark">
-                                <i className="bi bi-shield-check text-primary"></i> بيانات التوثيق
+                                <i className="bi bi-shield-check text-primary"></i> بيانات الحساب والتوثيق
                             </h6>
                             <div className="p-4 bg-light bg-opacity-50 rounded-4 border">
                                 <div className="row align-items-center">
                                     <div className="col-md-12 text-end">
-                                        <h6 className="fw-bold mb-1 small text-muted">البريد الجامعي الموثق</h6>
+                                        <h6 className="fw-bold mb-1 small text-muted">البريد الإلكتروني المعتمد</h6>
                                         <p className="text-dark fw-bold mb-0" style={{ wordBreak: 'break-all' }}>{user.email}</p>
                                     </div>
                                 </div>

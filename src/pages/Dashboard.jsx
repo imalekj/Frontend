@@ -1,65 +1,89 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import { apiFetch } from '../api';
-import { useAuth } from '../context/AuthContext'; 
+import { useAuth } from '../context/AuthContext';
+import { AppColors } from '../theme/AppColors';
 
 export const Dashboard = () => {
     const navigate = useNavigate();
-    const [competitions, setCompetitions] = React.useState([]);
-   const [loading, setLoading] = React.useState(false);
-     const { user, token } = useAuth();
-           const isLoggedIn = !!token;
-        const baseUrl = import.meta.env.VITE_API_BASE_URL;
-    const mainGreen = '#1a5d44'; 
+    const [competitions, setCompetitions] = useState([]);
+    const [myTeams, setMyTeams] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [teamsLoading, setTeamsLoading] = useState(false);
+    const { user, token } = useAuth();
+    const isLoggedIn = !!token;
+    const baseUrl = import.meta.env.VITE_API_BASE_URL;
 
- React.useEffect(() => {
-    const fetchCompetitions = async () => {
-        setLoading(true);
+    useEffect(() => {
+        const fetchCompetitions = async () => {
+            setLoading(true);
+            try {
+                const res = await apiFetch(`${baseUrl}api/Posts/GetAllProject`, {
+                    method: "GET",
+                    headers: { "Accept": "*/*" }
+                });
+                const data = await res.json();
+                
+                const dataArray = Array.isArray(data) ? data : [];
+                
+                const formatted = dataArray.map(comp => ({
+                    id: comp.projectID,
+                    title: comp.name,
+                    description: comp.descriptions,
+                    rating: comp.rating,
+                    isGraduation: comp.isGraduationProject,
+                    endDate: comp.endDate,
+                    skills: comp.skills,
+                    availableSeats: comp.numberOfAvailableSeats,
+                    location: comp.projectLocation,
+                    teamType: comp.teamType
+                }));
+                setCompetitions(formatted);
+            } catch (err) {
+                console.error("Error fetching competitions:", err);
+                setCompetitions([]);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchCompetitions();
+    }, [baseUrl]);
 
-        try {
-            const res = await apiFetch(`${baseUrl}api/Posts/GetAllProject`, {
-                method: "GET",
-                headers: {
-                    "Accept": "*/*"
+    useEffect(() => {
+        const fetchMyTeams = async () => {
+            if (!isLoggedIn) return;
+            setTeamsLoading(true);
+            try {
+                const res = await apiFetch(`${baseUrl}api/Teams/GetMyTeams`, {
+                    method: "GET",
+                    headers: {
+                        "Authorization": `Bearer ${token}`,
+                        "Accept": "*/*"
+                    }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    setMyTeams(Array.isArray(data) ? data : []);
                 }
-            });
+            } catch (err) {
+                console.error("Error fetching my teams:", err);
+                setMyTeams([]);
+            } finally {
+                setTeamsLoading(false);
+            }
+        };
+        fetchMyTeams();
+    }, [isLoggedIn, token, baseUrl]);
 
-            const data = await res.json();
-
-const formatted = data.map(comp => ({
-    id: comp.projectID,
-    title: comp.name,
-    description: comp.descriptions,
-    rating: comp.rating,
-    isGraduation: comp.isGraduationProject,
-    endDate: comp.endDate,
-    skills: comp.skills,
-    availableSeats: comp.numberOfAvailableSeats,
-    location: comp.projectLocation,
-    teamType: comp.teamType
-}));
-
-            setCompetitions(formatted);
-
-        } catch (err) {
-            console.error(err);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    fetchCompetitions();
-}, []);
     const handleJoinClick = (id) => {
-        // التحقق الآن يعتمد على الـ Context
         if (!isLoggedIn) {
             Swal.fire({
                 title: '<span style="font-family: Cairo">خطوة واحدة تفصلك!</span>',
                 html: '<p style="font-family: Cairo">يجب تسجيل الدخول باستخدام بريدك الجامعي لتتمكن من الانضمام للفرق.</p>',
                 icon: 'info',
                 showCancelButton: true,
-                confirmButtonColor: mainGreen,
+                confirmButtonColor: AppColors.primaryGreen,
                 cancelButtonColor: '#6e7881',
                 confirmButtonText: 'تسجيل الدخول',
                 cancelButtonText: 'تصفح كزائر',
@@ -71,107 +95,120 @@ const formatted = data.map(comp => ({
                 }
             });
         } else {
-          navigate(`/competition/${id}`);
+            navigate(`/competition/${id}`);
         }
     };
 
     return (
-        <div className="dashboard-wrapper min-vh-100 text-end bg-white" dir="rtl">
+        <div className="dashboard-wrapper min-vh-100 text-end bg-light" dir="rtl">
             <style>
                 {`
                     @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap');
-                    
-                    body { font-family: 'Cairo', sans-serif; color: #2c3e50; overflow-x: hidden; }
+                    body { font-family: 'Cairo', sans-serif; color: #2c3e50; }
                     
                     .hero-section { 
-                        background: linear-gradient(135deg, #ffffff 0%, #f1f5f3 100%); 
-                        padding: 100px 0; 
+                        background: linear-gradient(135deg, #ffffff 0%, #f4f8f6 100%); 
+                        padding: 120px 0 90px 0; 
                         position: relative;
                         overflow: hidden;
-                        border-bottom: 1px solid #e9ecef; 
+                        border-bottom: 1px solid #eef2f0; 
                     }
-
                     .bg-icon-person {
-                        position: absolute;
-                        left: 8%;
-                        top: 50%;
-                        transform: translateY(-50%);
-                        font-size: 18rem;
-                        color: ${mainGreen};
-                        opacity: 0.12;
-                        z-index: 1;
+                        position: absolute; left: 6%; top: 50%; transform: translateY(-50%);
+                        font-size: 20rem; color: ${AppColors.primaryGreen}; opacity: 0.08; z-index: 1;
                     }
-
                     .bg-icon-trophy {
-                        position: absolute;
-                        left: 24%;
-                        top: 30%;
-                        font-size: 5rem;
-                        color: ${mainGreen};
-                        opacity: 0.2;
-                        z-index: 1;
+                        position: absolute; left: 22%; top: 25%;
+                        font-size: 6rem; color: ${AppColors.primaryGreen}; opacity: 0.12; z-index: 1;
                         transform: rotate(15deg);
                     }
+                    .hero-title { font-size: 3rem; font-weight: 900; color: #1a2a23; line-height: 1.2; z-index: 2; position: relative; }
+                    .hero-title span { color: ${AppColors.primaryGreen}; }
+                    .hero-subtitle { color: #5a6c64; font-size: 1.15rem; max-width: 650px; line-height: 1.8; z-index: 2; position: relative; }
 
-                    .hero-title { font-size: 2.8rem; font-weight: 900; color: #1a2a23; line-height: 1.2; position: relative; z-index: 2; }
-                    .hero-title span { color: ${mainGreen}; }
-                    .hero-subtitle { color: #5a6c64; font-size: 1.1rem; max-width: 600px; line-height: 1.7; position: relative; z-index: 2; }
+                    .btn-prime { background-color: ${AppColors.primaryGreen}; color: white; border-radius: 12px; padding: 12px 35px; font-weight: 700; border: none; transition: 0.3s ease; cursor: pointer; }
+                    .btn-prime:hover { background-color: #124130; transform: translateY(-2px); box-shadow: 0 5px 15px rgba(26,93,68,0.15); }
+                    .btn-ghost { background: white; color: ${AppColors.primaryGreen}; border: 2px solid ${AppColors.primaryGreen}; border-radius: 12px; padding: 10px 35px; font-weight: 700; transition: 0.3s ease; cursor: pointer; text-decoration: none; display: inline-block; }
+                    .btn-ghost:hover { background: ${AppColors.primaryGreen}; color: white; transform: translateY(-2px); }
 
-                    .btn-prime { background-color: ${mainGreen}; color: white; border-radius: 10px; padding: 12px 32px; font-weight: 700; border: none; transition: 0.3s; cursor: pointer; }
-                    .btn-prime:hover { background-color: #124130; transform: translateY(-2px); }
-                    .btn-ghost { background: white; color: ${mainGreen}; border: 2px solid ${mainGreen}; border-radius: 10px; padding: 10px 32px; font-weight: 700; transition: 0.3s; cursor: pointer; text-decoration: none; display: inline-block; }
-                    .btn-ghost:hover { background: ${mainGreen}; color: white; }
-
-                    .comp-row { 
-                        background: white; 
-                        border: 1px solid #edf2f0; 
-                        border-radius: 15px; 
-                        transition: all 0.3s ease;
-                        padding: 20px;
-                        border-right: 6px solid transparent;
+                    .btn-see-more {
+                        background-color: white;
+                        color: ${AppColors.primaryGreen};
+                        border: 1px solid #e2e8f0;
+                        font-weight: 700;
+                        font-size: 0.85rem;
+                        padding: 6px 18px;
+                        border-radius: 50px;
+                        transition: all 0.2s ease;
+                        cursor: pointer;
+                        box-shadow: 0 2px 6px rgba(0,0,0,0.02);
                     }
-                    .comp-row:hover { border-right-color: ${mainGreen}; transform: translateY(-3px); box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
-                    
+                    .btn-see-more:hover {
+                        background-color: ${AppColors.primaryGreen};
+                        color: white;
+                        border-color: ${AppColors.primaryGreen};
+                        transform: translateX(-3px);
+                        box-shadow: 0 4px 12px rgba(26, 93, 68, 0.15);
+                    }
+
+                    .comp-card {
+                        background: white;
+                        border: 1px solid #e2e8f0;
+                        border-radius: 16px;
+                        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                        display: flex;
+                        flex-direction: column;
+                        height: 100%;
+                    }
+                    .comp-card:hover {
+                        transform: translateY(-5px);
+                        box-shadow: 0 12px 30px rgba(0,0,0,0.06);
+                        border-color: ${AppColors.primaryGreen};
+                    }
+                    .card-badge {
+                        background: rgba(26, 93, 68, 0.06);
+                        color: ${AppColors.primaryGreen};
+                        font-weight: 700;
+                        font-size: 0.8rem;
+                        padding: 5px 12px;
+                        border-radius: 8px;
+                    }
                     .btn-publish {
-                        background-color: ${mainGreen} !important;
+                        background-color: ${AppColors.primaryGreen} !important;
                         color: white !important;
-                        width: 50px;
-                        height: 50px;
-                        border-radius: 12px;
+                        width: 55px; height: 55px; border-radius: 16px;
                         transition: 0.3s ease;
-                        box-shadow: 0 4px 15px rgba(26,93,68,0.2) !important;
+                        box-shadow: 0 5px 20px rgba(26,93,68,0.3) !important;
                     }
                     .swal2-popup { font-family: 'Cairo', sans-serif !important; border-radius: 20px !important; }
                 `}
             </style>
 
-            <div className="hero-section">
+            <div className="hero-section bg-white">
                 <i className="bi bi-person-fill bg-icon-person"></i>
                 <i className="bi bi-trophy-fill bg-icon-trophy"></i>
-
                 <div className="container">
                     <div className="row align-items-center">
-                        <div className="col-lg-8">
-                            <h1 className="hero-title mb-4">
-                                المنصة الرسمية <br />
-                                <span>للفرق الطلابية بجامعة الزيتونة</span>
+                        <div className="col-lg-9">
+                            <h1 className="hero-title mb-3">
+                                منصة <span>فـريـقـي</span> <br />
+                                <span className="fs-2 text-dark fw-bold">بوابتك الذكية لتشكيل وإدارة الفرق الطلابية</span>
                             </h1>
-                            <p className="hero-subtitle mb-5 fw-bold">
-                                بيئة أكاديمية متكاملة تهدف إلى تمكين الطلاب من تكوين فرق تقنية وعلمية متجانسة للمشاركة في المسابقات المحلية والدولية.
+                            <p className="hero-subtitle mb-4 text-muted">
+                                المظلة الأكاديمية الشاملة لطلبة جامعة الزيتونة الأردنية بكافة كلياتها وتخصصاتها، والمصممة لمساعدتك في بناء فرق متكاملة لمشاريع التخرج والمسابقات المتنوعة.
                             </p>
-                            
                             <div className="d-flex gap-3 justify-content-start">
                                 {isLoggedIn ? (
                                     <button className="btn-prime shadow-sm" onClick={() => navigate('/competitions')}>
-                                        ابدأ رحلتك الآن
+                                        استكشف الفرص المتاحة
                                     </button>
                                 ) : (
                                     <>
                                         <button className="btn-prime shadow-sm" onClick={() => navigate('/login')}>
-                                            تسجيل الدخول
+                                            ابدأ رحلتك الآن
                                         </button>
                                         <button className="btn-ghost" onClick={() => navigate('/verify-email')}>
-                                            انضم إلينا الآن
+                                            إنشاء حساب جديد
                                         </button>
                                     </>
                                 )}
@@ -181,56 +218,113 @@ const formatted = data.map(comp => ({
                 </div>
             </div>
 
-            <div className="container py-5 mt-4">
-                <h3 className="fw-bold mb-4" style={{borderRight: `4px solid ${mainGreen}`, paddingRight: '15px'}}>المسابقات المتاحة</h3>
-                <div className="row g-4">
-                   {competitions.map(comp => (
-                        <div key={comp.id} className="col-12">
-                            <div className="comp-row d-md-flex align-items-center justify-content-between">
-                                <div className="d-flex align-items-center gap-4">
-                                    <div className="d-none d-md-block text-center border-start ps-4" style={{minWidth: '90px'}}>
-                                        <h3 className="mb-0 fw-bold text-success">{comp.endDate ? new Date(comp.endDate).toLocaleDateString(): "لا يوجد تاريخ"}</h3>
-                                        <div className="text-muted small"></div>
-                                    </div>
+            <div className="container py-5">
+                <div className="d-flex align-items-center justify-content-between mb-4">
+                    <h4 className="fw-bold mb-0" style={{ borderRight: `4px solid ${AppColors.primaryGreen}`, paddingRight: '12px' }}>
+                        المسابقات والمشاريع النشطة
+                    </h4>
+                    <button className="btn-see-more shadow-sm d-flex align-items-center gap-1" onClick={() => navigate('/competitions')}>
+                        عرض المزيد <i className="bi bi-arrow-left small"></i>
+                    </button>
+                </div>
+
+                {loading ? (
+                    <div className="text-center py-5">
+                        <div className="spinner-border text-success" role="status"></div>
+                        <p className="text-muted mt-2 small">جاري تحميل المنشورات المتاحة...</p>
+                    </div>
+                ) : (
+                    <div className="row g-4">
+                        {competitions.slice(0, 6).map(comp => (
+                            <div key={comp.id} className="col-md-6 col-lg-4">
+                                <div className="comp-card p-4 d-flex flex-column justify-content-between">
                                     <div>
-                                        <div className="d-flex align-items-center gap-2 mb-1">
-                                            <span className="badge bg-light text-success border">{comp.category}</span>
+                                        <div className="d-flex justify-content-between align-items-start mb-3">
+                                            <span className="card-badge">
+                                                {comp.isGraduation ? "مشروع تخرج" : "مسابقة"}
+                                            </span>
+                                            <small className="text-muted fw-bold">
+                                                <i className="bi bi-calendar2-event ms-1"></i>
+                                                {comp.endDate ? new Date(comp.endDate).toLocaleDateString() : "مفتوح"}
+                                            </small>
                                         </div>
-                                        <h5 className="fw-bold mb-1">{comp.title}</h5>
-                                        <div className="text-muted small fw-bold">
-                                            <i className="bi bi-people-fill ms-1"></i> {comp.required}
+                                        <h5 className="fw-bold text-dark mb-2 lh-base">{comp.title}</h5>
+                                        <p className="text-muted small mb-3" style={{ height: '42px', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+                                            {comp.description || "لا يوجد تفاصيل إضافية حول هذا الإعلان."}
+                                        </p>
+                                    </div>
+
+                                    <div className="border-top pt-3 mt-2">
+                                        <div className="d-flex justify-content-between align-items-center mb-3">
+                                            <span className="small text-secondary fw-bold">
+                                                <i className="bi bi-person-plus ms-1 text-success"></i> 
+                                                المقاعد المتاحة: {comp.availableSeats || 0}
+                                            </span>
+                                            {comp.teamType && (
+                                                <span className="badge bg-light text-muted border small">{comp.teamType}</span>
+                                            )}
+                                        </div>
+                                        <div className="row g-2">
+                                            <div className="col-4">
+                                                <button className="btn btn-light btn-sm w-100 py-2 fw-bold border rounded-3" onClick={() => navigate(`/competition/${comp.id}`)}>
+                                                    التفاصيل
+                                                </button>
+                                            </div>
+                                            <div className="col-8">
+                                                <button className="btn-prime btn-sm w-100 py-2 rounded-3 text-center fs-7" onClick={() => handleJoinClick(comp.id)}>
+                                                    طلب انضمام
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                                <div className="mt-3 mt-md-0 d-flex gap-2">
-                                    <button 
-                                        className="btn btn-light btn-sm px-3 fw-bold border" 
-                                        onClick={() => navigate(`/competition/${comp.id}`)}
-                                    >
-                                        التفاصيل
-                                    </button>
-                                    <button 
-                                        className="btn-prime btn-sm px-3" 
-                                      onClick={() => handleJoinClick(comp.id)}
-                                    >
-                                        انضمام للفريق
-                                    </button>
                                 </div>
                             </div>
-                        </div>
-                    ))}
-                </div>
+                        ))}
+                    </div>
+                )}
+
+                {isLoggedIn && (
+                    <div className="mt-5 pt-4">
+                        <h4 className="fw-bold mb-4" style={{ borderRight: `4px solid ${AppColors.primaryGreen}`, paddingRight: '12px' }}>
+                            الفرق التي تنتمي إليها
+                        </h4>
+                        {teamsLoading ? (
+                            <div className="text-center py-4 bg-white rounded-4 border">
+                                <div className="spinner-border spinner-border-sm text-success"></div>
+                            </div>
+                        ) : myTeams.length === 0 ? (
+                            <div className="text-center py-5 bg-white rounded-4 border shadow-sm">
+                                <i className="bi bi-people text-light display-4 d-block mb-3"></i>
+                                <h6 className="fw-bold text-secondary">لم تنضم إلى أي فريق حتى الآن</h6>
+                                <p className="text-muted small mb-0">ابدأ بتقديم طلبات انضمام للمشاريع المتاحة في الأعلى.</p>
+                            </div>
+                        ) : (
+                            <div className="row g-3">
+                                {myTeams.map(team => (
+                                    <div key={team.teamID || team.id} className="col-md-6 col-lg-4">
+                                        <div className="p-3 bg-white border rounded-4 d-flex align-items-center justify-content-between shadow-sm">
+                                            <div className="d-flex align-items-center gap-3">
+                                                <div className="bg-success bg-opacity-10 rounded-3 p-2.5 text-success">
+                                                    <i className="bi bi-shield-check fs-4"></i>
+                                                </div>
+                                                <div>
+                                                    <h6 className="fw-bold mb-1 text-dark">{team.teamName || team.name}</h6>
+                                                    <small className="text-muted d-block">مشروع: {team.projectName || "قيد المراجعة"}</small>
+                                                </div>
+                                            </div>
+                                            <button className="btn btn-sm btn-light border rounded-3 fw-bold px-3" onClick={() => navigate('/my-teams')}>
+                                                إدارة
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
 
-            {isLoggedIn && (
-                <button 
-                    className="btn btn-publish shadow position-fixed bottom-0 start-0 m-4 d-flex align-items-center justify-content-center border-0"
-                    title="إنشاء إعلان جديد"
-                    onClick={() => navigate('/create-post')}
-                >
-                    <i className="bi bi-plus-lg fs-4"></i>
-                </button>
-            )}
+        
         </div>
     );
 };

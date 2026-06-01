@@ -1,5 +1,6 @@
 import React from 'react';
 import zujLogo from '../assets/logo.png';
+import { AppColors } from '../theme/AppColors';
 
 export const Footer = () => {
     return (
@@ -14,7 +15,7 @@ export const Footer = () => {
                         style={{ filter: 'grayscale(1)' }}
                     />
                     <h6 className="fw-bold text-dark mb-1" style={{ fontSize: '0.85rem' }}>جامعة الزيتونة الأردنية</h6>
-                    <p className="text-muted mb-3" style={{ fontSize: '0.75rem' }}>منصة تواصل الفرق الطلابية - كلية تكنولوجيا المعلومات</p>
+                    <p className="text-muted mb-3" style={{ fontSize: '0.75rem' }}>منصة تواصل الفرق الطلابية</p>
 
                     <div className="d-flex gap-3 mb-3">
                         <a href="#" className="text-muted"><i className="bi bi-facebook"></i></a>
@@ -22,10 +23,6 @@ export const Footer = () => {
                         <a href="#" className="text-muted"><i className="bi bi-linkedin"></i></a>
                     </div>
 
-                    <hr className="w-25 my-2 opacity-25" />
-                    <small className="text-muted" style={{ fontSize: '0.65rem' }}>
-                        © 2026 جميع الحقوق محفوظة - تم التطوير بكلية IT
-                    </small>
                 </div>
             </div>
         </footer>

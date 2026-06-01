@@ -3,12 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import { useAuth } from '../context/AuthContext';
 import { apiFetch } from '../api';
+import { AppColors } from '../theme/AppColors';
+
 export const MyTeams = () => {
     const navigate = useNavigate();
     const { user, token } = useAuth();
-    const isLoggedIn = !!token;
     const baseUrl = import.meta.env.VITE_API_BASE_URL;
-    const mainGreen = '#1a5d44';
 
     const defaultAvatar = "https://static.vecteezy.com/system/resources/thumbnails/009/292/244/small/default-avatar-icon-of-social-media-user-vector.jpg";
 
@@ -30,28 +30,39 @@ export const MyTeams = () => {
 
                 if (response.ok) {
                     const data = await response.json();
-                    setTeams(data);
+
+                    if (Array.isArray(data)) {
+                        setTeams(data);
+                    } else if (data && Array.isArray(data.data)) {
+                        setTeams(data.data);
+                    } else {
+                        setTeams([]);
+                    }
                 } else {
                     const errorText = await response.text();
                     console.log("API Error:", errorText);
+                    setTeams([]);
                 }
             } catch (error) {
                 console.log("Connection error:", error);
+                setTeams([]);
             } finally {
                 setLoading(false);
             }
         };
 
         fetchTeams();
-    }, [token]);
-    console.log(teams);
+    }, [token, baseUrl]);
+
+    const safeTeams = Array.isArray(teams) ? teams : [];
+
     return (
         <div className="container py-4 text-end" dir="rtl" style={{ maxWidth: '900px', fontFamily: 'Cairo, sans-serif' }}>
             <style>
                 {`
                     .team-card {
                         border-radius: 20px;
-                        border: 1px solid #f0f0f0;
+                        border: 1px solid ${AppColors.borderInput || '#f0f0f0'};
                         transition: 0.3s;
                         background: white;
                         padding: 1.25rem !important;
@@ -85,10 +96,14 @@ export const MyTeams = () => {
 
             <div className="d-flex justify-content-between align-items-center mb-4">
                 <div>
-                    <h4 className="fw-bold mb-1" style={{ color: mainGreen }}>فرق عملي</h4>
+                    <h4 className="fw-bold mb-1" style={{ color: AppColors.primaryGreen || '#1a5d44' }}>فرق عملي</h4>
                     <p className="text-muted small mb-0">متابعة مشاريعك في جامعة الزيتونة الأردنية</p>
                 </div>
-                <button className="btn btn-sm btn-outline-success rounded-pill px-3" onClick={() => window.location.reload()}>
+                <button
+                    className="btn btn-sm rounded-pill px-3"
+                    style={{ borderColor: AppColors.primaryGreen || '#1a5d44', color: AppColors.primaryGreen || '#1a5d44' }}
+                    onClick={() => window.location.reload()}
+                >
                     <i className="bi bi-arrow-clockwise ms-1"></i> تحديث
                 </button>
             </div>
@@ -96,39 +111,44 @@ export const MyTeams = () => {
             <div className="row g-3">
                 {loading ? (
                     <div className="text-center py-5 w-100">
-                        <div className="spinner-border text-success" role="status"></div>
+                        <div className="spinner-border text-success" role="status" style={{ color: AppColors.primaryGreen || '#1a5d44' }}></div>
                         <p className="mt-2 text-muted">جاري تحميل فرقك الخاصة...</p>
                     </div>
-                ) : teams.length > 0 ? (
-                    teams.map((team) => (
-                        <div className="col-md-6" key={team.Name}>
+                ) : safeTeams.length > 0 ? (
+                    safeTeams.map((team) => (
+                        <div className="col-md-6" key={team.projectId || team.ProjectId || team.name}>
                             <div className="card team-card shadow-sm h-100">
                                 <div className="d-flex justify-content-between align-items-start mb-3">
                                     <div className="d-flex align-items-center gap-2">
-                                        <div className="p-2 rounded-3 bg-light text-success" style={{ fontSize: '1.2rem' }}>
+                                        <div className="p-2 rounded-3 bg-light" style={{ fontSize: '1.2rem', color: AppColors.primaryGreen || '#1a5d44' }}>
                                             <i className="bi bi-code-square"></i>
                                         </div>
                                         <div>
                                             <h6 className="fw-bold mb-0 text-dark">{team.name}</h6>
-                                            <small className="text-muted" style={{ fontSize: '0.65rem' }}>كود الفريق: {team.projectId}</small>
+                                            <small className="text-muted" style={{ fontSize: '0.65rem' }}>كود الفريق: {team.projectId || team.ProjectId}</small>
                                         </div>
                                     </div>
-                                    <span className={`status-badge ${team.status === 'active' ? 'bg-success-subtle text-success' : 'bg-light text-secondary'}`}>
+                                    <span
+                                        className="status-badge"
+                                        style={{
+                                            backgroundColor: team.status === 'active' ? '#e8f5e9' : '#f5f5f5',
+                                            color: team.status === 'active' ? (AppColors.primaryGreen || '#1a5d44') : '#6c757d'
+                                        }}
+                                    >
                                         {team.status === 'active' ? 'نشط' : 'مكتمل'}
                                     </span>
                                 </div>
 
                                 <div className="mb-3">
                                     <div className="small mb-2 text-secondary">
-                                        <i className="bi bi-trophy-fill text-warning ms-1"></i> {team.rating}
+                                        <i className="bi bi-trophy-fill text-warning ms-1"></i> {team.rating || 0}
                                     </div>
 
                                     <div className="d-flex justify-content-between align-items-center">
                                         <div className="small">
-                                            <span className="text-muted">دورك:</span> <b className="text-dark">{team.role}</b>
+                                            <span className="text-muted">دورك:</span> <b className="text-dark">{team.role || 'عضو'}</b>
                                         </div>
                                         <div className="d-flex align-items-center">
-                                            {/* محاكاة عرض الأعضاء بناءً على عددهم */}
                                             {[...Array(Math.min(Number(team.availableSeats || 0), 4))].map((_, i) => (
                                                 <img
                                                     key={i}
@@ -137,9 +157,9 @@ export const MyTeams = () => {
                                                     className="member-avatar"
                                                 />
                                             ))}
-                                            {team.membersCount > 0 && (
+                                            {(team.membersCount > 0 || team.availableSeats > 0) && (
                                                 <span className="small text-muted me-2" style={{ fontSize: '0.7rem' }}>
-                                                    {team.availableSeats} أعضاء
+                                                    {team.availableSeats || team.membersCount} أعضاء
                                                 </span>
                                             )}
                                         </div>
@@ -147,7 +167,9 @@ export const MyTeams = () => {
                                 </div>
 
                                 <div className="pt-2 border-top d-flex justify-content-between align-items-center">
-                                    <span className="text-muted" style={{ fontSize: '0.7rem' }}>آخر تحديث: {new Date(team.updatedAt).toLocaleDateString()}</span>
+                                    <span className="text-muted" style={{ fontSize: '0.7rem' }}>
+                                        آخر تحديث: {team.updatedAt ? new Date(team.updatedAt).toLocaleDateString() : new Date().toLocaleDateString()}
+                                    </span>
                                     <div className="d-flex gap-2">
                                         <button
                                             onClick={() =>
@@ -159,14 +181,6 @@ export const MyTeams = () => {
                                         >
                                             <i className="bi bi-info-circle me-1"></i> التفاصيل
                                         </button>
-                                        {team.isSubmitted && (
-                                            <button
-                                                onClick={() => navigate(`/evaluate/${team.ProjectId}`)}
-                                                className="btn btn-warning btn-action-sm shadow-sm"
-                                            >
-                                                تقييم الفريق
-                                            </button>
-                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -177,7 +191,13 @@ export const MyTeams = () => {
                         <i className="bi bi-people text-muted fs-1 mb-3"></i>
                         <h5 className="text-muted">لم تنضم إلى أي فريق بعد</h5>
                         <p className="small text-secondary">ابدأ بالبحث عن زملاء لمشروع تخرجك الآن!</p>
-                        <button className="btn btn-success btn-sm mx-auto px-4 rounded-pill" onClick={() => navigate('/students')}>البحث عن شركاء</button>
+                        <button
+                            className="btn btn-sm mx-auto px-4 rounded-pill text-white"
+                            style={{ backgroundColor: AppColors.primaryGreen || '#1a5d44' }}
+                            onClick={() => navigate('/students')}
+                        >
+                            البحث عن شركاء
+                        </button>
                     </div>
                 )}
             </div>

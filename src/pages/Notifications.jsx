@@ -3,23 +3,21 @@ import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 import { useAuth } from '../context/AuthContext';
-import { apiFetch } from '../api';
+import { AppColors } from '../theme/AppColors';
+
 export const Notifications = () => {
     const navigate = useNavigate();
-    const { user, token } = useAuth();
-    const isLoggedIn = !!token;
-    const mainGreen = '#1a5d44';
+    const { user } = useAuth();
     const baseUrl = import.meta.env.VITE_API_BASE_URL;
     const [filter, setFilter] = useState('all');
     const [notifications, setNotifications] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    // 1. جلب التنبيهات من السيرفر عند تحميل الصفحة
+
     useEffect(() => {
         const fetchNotifications = async () => {
             if (!user?.identifier) return;
             try {
-                // استبدل المسار بالـ API الحقيقي الخاص بك
                 const response = await fetch(`${baseUrl}api/Notifications/GetUserNotifications/${user.identifier}`, {
                     headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
                 });
@@ -34,7 +32,7 @@ export const Notifications = () => {
             }
         };
         fetchNotifications();
-    }, [user]);
+    }, [user, baseUrl]);
 
     const swalStyled = Swal.mixin({
         customClass: {
@@ -45,14 +43,13 @@ export const Notifications = () => {
         fontFamily: 'Cairo'
     });
 
-    // 2. منطق الفلترة
+
     const filteredNotifs = notifications.filter(n => {
         if (filter === 'unread') return !n.isRead;
-        if (filter === 'teams') return n.category === 'teams' || n.type.includes('request');
+        if (filter === 'teams') return n.category === 'teams' || n.type?.includes('request');
         return true;
     });
 
-    // 3. تحديث حالة التنبيه كـ "مقروء" في السيرفر
     const markAsRead = async (id) => {
         try {
             await fetch(`${baseUrl}api/Notifications/MarkAsRead/${id}`, {
@@ -78,7 +75,6 @@ export const Notifications = () => {
         }).then(async (result) => {
             if (result.isConfirmed) {
                 try {
-                    // طلب الحذف من السيرفر
                     await fetch(`${baseUrl}api/Notifications/Delete/${id}`, {
                         method: 'DELETE',
                         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
@@ -104,12 +100,17 @@ export const Notifications = () => {
         if (notifications.every(n => n.isRead)) return;
 
         try {
-            await apiFetch(`${baseUrl}api/Notifications/MarkAllRead/${user.identifier}`, {
+            await fetch(`${baseUrl}api/Notifications/MarkAllRead/${user.identifier}`, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
             });
             setNotifications(notifications.map(n => ({ ...n, isRead: true })));
-            Swal.fire({ title: 'تمت القراءة', text: 'تم تحديد جميع التنبيهات كمقروءة', icon: 'success', confirmButtonColor: mainGreen });
+            Swal.fire({ 
+                title: 'تمت القراءة', 
+                text: 'تم تحديد جميع التنبيهات كمقروءة', 
+                icon: 'success', 
+                confirmButtonColor: AppColors.primaryGreen 
+            });
         } catch (error) {
             console.error("Error marking all read:", error);
         }
@@ -122,7 +123,7 @@ export const Notifications = () => {
                     .notif-card { 
                         border-radius: 22px; 
                         transition: all 0.3s ease; 
-                        border: 1px solid #f1f5f9;
+                        border: 1px solid ${AppColors.borderLight};
                         cursor: pointer;
                         position: relative;
                         overflow: hidden;
@@ -132,8 +133,8 @@ export const Notifications = () => {
                         box-shadow: 0 10px 20px rgba(0,0,0,0.05) !important;
                     }
                     .unread { 
-                        background-color: #f0fdf4 !important; 
-                        border-right: 5px solid ${mainGreen} !important; 
+                        background-color: ${AppColors.lightGreen} !important; 
+                        border-right: 5px solid ${AppColors.primaryGreen} !important; 
                     }
                     .filter-btn {
                         border-radius: 12px;
@@ -143,12 +144,12 @@ export const Notifications = () => {
                         transition: 0.3s;
                         border: 1px solid #eee;
                         background: white;
-                        color: #64748b;
+                        color: ${AppColors.textMuted};
                     }
                     .filter-btn.active {
-                        background: ${mainGreen};
+                        background: ${AppColors.primaryGreen};
                         color: white;
-                        border-color: ${mainGreen};
+                        border-color: ${AppColors.primaryGreen};
                     }
                     .delete-btn {
                         opacity: 0;
@@ -159,8 +160,8 @@ export const Notifications = () => {
                         display: flex;
                         align-items: center;
                         justify-content: center;
-                        background: #fee2e2;
-                        color: #dc2626;
+                        background: ${AppColors.dangerLight};
+                        color: ${AppColors.dangerRed};
                         border: none;
                     }
                     .notif-card:hover .delete-btn { opacity: 1; }
@@ -182,7 +183,7 @@ export const Notifications = () => {
                     <div className="mb-5 text-center text-md-end">
                         <div className="d-flex flex-column flex-md-row justify-content-between align-items-center mb-4 gap-3">
                             <div>
-                                <h3 className="fw-bold mb-1" style={{ color: mainGreen }}>مركز التنبيهات</h3>
+                                <h3 className="fw-bold mb-1" style={{ color: AppColors.primaryGreen }}>مركز التنبيهات</h3>
                                 <p className="text-muted small mb-0">تنبيهات منصة مشاريع جامعة الزيتونة</p>
                             </div>
                             <button onClick={markAllRead} className="btn btn-light btn-sm rounded-pill px-4 fw-bold border shadow-sm">
@@ -210,7 +211,7 @@ export const Notifications = () => {
                                     className={`card notif-card p-3 shadow-sm border-0 ${!n.isRead ? 'unread' : 'bg-white'}`}
                                     onClick={() => {
                                         markAsRead(n.id);
-                                        navigate(n.link);
+                                        if (n.link) navigate(n.link);
                                     }}
                                 >
                                     <div className="d-flex align-items-center gap-3">
@@ -223,7 +224,7 @@ export const Notifications = () => {
                                         <div className="flex-grow-1 text-end">
                                             <div className="d-flex justify-content-between align-items-start">
                                                 <p className="mb-1 small fw-bold text-dark lh-base" style={{ maxWidth: '85%' }}>
-                                                    <span style={{ color: mainGreen }}>{n.user}</span> {n.content}
+                                                    <span style={{ color: AppColors.primaryGreen }}>{n.user}</span> {n.content}
                                                 </p>
                                                 <button onClick={(e) => deleteNotif(e, n.id)} className="delete-btn" title="حذف">
                                                     <i className="bi bi-trash"></i>
