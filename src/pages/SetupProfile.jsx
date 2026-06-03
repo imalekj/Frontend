@@ -97,13 +97,11 @@ export const SetupProfile = () => {
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
-    // معالجة تغيير التخصص وحفظ الـ ID الرقمي مباشرة
     const handleMajorChange = (e) => {
         const selectedId = parseInt(e.target.value);
         setFormData(prev => ({ ...prev, majorId: selectedId }));
     };
 
-    // تحديث الكلية يغير التخصص التابع لها لأول عنصر رقمي متاح في تلك الكلية تلقائياً
     const handleFacultyChange = (e) => {
         const selectedFaculty = e.target.value;
         const firstMajorInFaculty = facultiesData[selectedFaculty][0];
