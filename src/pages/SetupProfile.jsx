@@ -5,15 +5,46 @@ import Swal from 'sweetalert2';
 import { useAuth } from '../context/AuthContext';
 import { AppColors } from '../theme/AppColors';
 
+
 const facultiesData = {
-    "كلية تكنولوجيا المعلومات": ["هندسة البرمجيات", "علم الحاسوب", "الأمن السيبراني", "الذكاء الاصطناعي", "نظم المعلومات الحاسوبية"],
-    "كلية الهندسة والتكنولوجيا": ["الهندسة المدنية", "الهندسة الميكانيكية", "الهندسة الكهربائية", "هندسة العمارة"],
-    "كلية الصيدلة": ["الصيدلة"],
-    "كلية التمريض": ["التمريض"],
-    "كلية الأعمال": ["إدارة الأعمال", "المحاسبة", "العلوم المالية والمصرفية", "التسويق"],
-    "كلية الحقوق": ["الحقوق"],
-    "كلية الآداب": ["اللغة العربية", "اللغة الإنجليزية", "الترجمة"],
-    "كلية العلوم والآداب": ["الرياضيات", "الفيزياء"]
+    "كلية تكنولوجيا المعلومات": [
+        { id: 1, name: "هندسة البرمجيات" },
+        { id: 2, name: "علم الحاسوب" },
+        { id: 3, name: "الأمن السيبراني" },
+        { id: 5, name: "الذكاء الاصطناعي" },
+        { id: 4, name: "نظم المعلومات الحاسوبية" }
+    ],
+    "كلية الهندسة والتكنولوجيا": [
+        { id: 6, name: "الهندسة المدنية" },
+        { id: 14, name: "الهندسة الميكانيكية" },
+        { id: 15, name: "الهندسة الكهربائية" },
+        { id: 16, name: "هندسة العمارة" }
+    ],
+    "كلية الصيدلة": [
+        { id: 7, name: "الصيدلة" }
+    ],
+    "كلية التمريض": [
+        { id: 8, name: "التمريض" }
+    ],
+    "كلية الأعمال": [
+        { id: 10, name: "إدارة الأعمال" },
+        { id: 9, name: "المحاسبة" },
+        { id: 12, name: "العلوم المالية والمصرفية" },
+        { id: 11, name: "التسويق" },
+        { id: 13, name: "إدارة الموارد البشرية" }
+    ],
+    "كلية الحقوق": [
+        { id: 17, name: "الحقوق" }
+    ],
+    "كلية الآداب": [
+        { id: 18, name: "اللغة العربية" },
+        { id: 19, name: "اللغة الإنجليزية" },
+        { id: 20, name: "الترجمة" }
+    ],
+    "كلية العلوم والآداب": [
+        { id: 21, name: "الرياضيات" },
+        { id: 22, name: "الفيزياء" }
+    ]
 };
 
 export const SetupProfile = () => {
@@ -32,7 +63,7 @@ export const SetupProfile = () => {
         password: '',
         role: 'student',
         faculty: 'كلية تكنولوجيا المعلومات',
-        universityMajor: 'هندسة البرمجيات',
+        majorId: 1, 
         workField: '',
         githubUrl: '',
         skills: [],
@@ -66,12 +97,20 @@ export const SetupProfile = () => {
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
+    // معالجة تغيير التخصص وحفظ الـ ID الرقمي مباشرة
+    const handleMajorChange = (e) => {
+        const selectedId = parseInt(e.target.value);
+        setFormData(prev => ({ ...prev, majorId: selectedId }));
+    };
+
+    // تحديث الكلية يغير التخصص التابع لها لأول عنصر رقمي متاح في تلك الكلية تلقائياً
     const handleFacultyChange = (e) => {
         const selectedFaculty = e.target.value;
+        const firstMajorInFaculty = facultiesData[selectedFaculty][0];
         setFormData(prev => ({
             ...prev,
             faculty: selectedFaculty,
-            universityMajor: facultiesData[selectedFaculty][0]
+            majorId: firstMajorInFaculty.id
         }));
     };
 
@@ -115,7 +154,10 @@ export const SetupProfile = () => {
             formDataToSend.append("Role", "true");
             formDataToSend.append("githubUrl", formData.githubUrl || "");
             formDataToSend.append("workField", formData.workField || "");
-            formDataToSend.append("Specialization", formData.universityMajor || "");
+            
+            // التعديل الجوهري: إرسال الحقل كـ MajorId بصيغة رقمية مدعومة لتوافق قاعدة البيانات
+            formDataToSend.append("MajorId", formData.majorId);
+            
             formDataToSend.append("Description", formData.description || "");
             formDataToSend.append("skills", formData.skills.join(","));
 
@@ -220,8 +262,11 @@ export const SetupProfile = () => {
                                         </div>
                                         <div className="col-md-6">
                                             <label className="small fw-bold mb-1">التخصص</label>
-                                            <select name="universityMajor" className="form-select input-custom" value={formData.universityMajor} onChange={handleInputChange}>
-                                                {facultiesData[formData.faculty].map(m => <option key={m} value={m}>{m}</option>)}
+                                            {/* ربط قيمة الـ select بـ majorId والـ onChange بـ handleMajorChange لقراءة الـ value الرقمي */}
+                                            <select name="majorId" className="form-select input-custom" value={formData.majorId} onChange={handleMajorChange}>
+                                                {facultiesData[formData.faculty].map(m => (
+                                                    <option key={m.id} value={m.id}>{m.name}</option>
+                                                ))}
                                             </select>
                                         </div>
                                         <div className="col-12">
