@@ -83,12 +83,18 @@ export const Navbar = () => {
         });
     };
 
+
+const imageUrl = `${baseUrl.replace(/\/$/, '')}${userInfo?.imagePath}`;
+
+
     const handleSearch = (e) => {
         if (e.key === 'Enter' && searchQuery.trim() !== "") {
             navigate(`/leaderboard?search=${searchQuery}`);
         }
     };
 
+
+   
     return (
         <nav className="navbar navbar-expand-lg navbar-light bg-white border-bottom sticky-top py-2" dir="rtl" style={{ fontFamily: 'Cairo, sans-serif' }}>
             <style>
@@ -188,7 +194,7 @@ export const Navbar = () => {
                                         </small>
                                     </div>
                                     <img 
-                                        src={`${baseUrl}${userInfo?.imagePath}`}
+                                        src={imageUrl}
                                         className="rounded-circle border shadow-sm" 
                                         width="38" height="38" 
                                         style={{objectFit: 'cover'}} 
