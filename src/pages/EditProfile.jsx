@@ -7,106 +7,126 @@ import { AppColors } from '../theme/AppColors';
 
 export const EditProfile = () => {
     const navigate = useNavigate();
-    const { user, login } = useAuth(); 
-    
+    const { user, login } = useAuth();
+    const userId = user?.id;
+    const [selectedFile, setSelectedFile] = useState(null);
     const mainGreen = AppColors.primaryGreen || '#1a5d44';
     const baseUrl = import.meta.env.VITE_API_BASE_URL;
 
     const [loading, setLoading] = useState(false);
-
     const [formData, setFormData] = useState({
-        fullName: user?.fullName || "",
-        faculty: user?.faculty || "",
-        universityMajor: user?.universityMajor || "",
-        workField: user?.workField || "",
-        githubUrl: user?.githubUrl || "",
-        linkedinUrl: user?.linkedinUrl || "",
-        portfolioUrl: user?.portfolioUrl || "",
-        pastProjects: user?.pastProjects || [{ title: "", link: "" }]
+        fullName: "",
+        role: "",
+        skills: "",
+        url: "",
+        bio: "",
     });
     
     const defaultImg = "https://static.vecteezy.com/system/resources/thumbnails/009/292/244/small/default-avatar-icon-of-social-media-user-vector.jpg";
     const [imagePreview, setImagePreview] = useState(defaultImg);
 
     useEffect(() => {
-        if (!user?.image) {
-            setImagePreview(defaultImg);
-            return;
-        }
+        if (!userId) return;
 
-        if (user.image.startsWith("http") || user.image.startsWith("blob")) {
-            setImagePreview(user.image);
-        } else {
-            setImagePreview(baseUrl + user.image);
-        }
-    }, [user, baseUrl]);
+        const fetchUserInfo = async () => {
+            try {
+                const res = await apiFetch(`${baseUrl}api/Login/GetUserInfo/${userId}`);
+                if (!res.ok) throw new Error("فشل في جلب البيانات");
 
-    const handleImageChange = (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            if (file.size > 2 * 1024 * 1024) {
-                return Swal.fire({
-                    icon: 'error',
-                    title: 'حجم الملف كبير',
-                    text: 'الحد الأقصى هو 2MB',
-                    confirmButtonColor: mainGreen
+                const data = await res.json();
+
+                setFormData({
+                    fullName: data.fullName || data.name || "",
+                    role: data.role || "",
+                    skills: data.skills || "",
+                    url: data.githubUrl || data.url || "",
+                    bio: data.bio || "",
                 });
+
+                if (data.imagePath) {
+                    setImagePreview(
+                        data.imagePath.startsWith("http")
+                            ? data.imagePath
+                            : `${baseUrl}${data.imagePath}`
+                    );
+                }
+
+            } catch (err) {
+                console.error("Error fetching user info:", err);
             }
-            setImagePreview(URL.createObjectURL(file));
+        };
+
+        fetchUserInfo();
+    }, [userId, baseUrl]);
+
+const handleImageChange = (e) => {
+    const file = e.target.files[0];
+
+    if (file) {
+        setSelectedFile(file);
+        setImagePreview(URL.createObjectURL(file));
+    }
+};
+const handleSave = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+
+    Swal.fire({
+        title: 'جاري الحفظ...',
+        allowOutsideClick: false,
+        didOpen: () => { Swal.showLoading(); }
+    });
+
+    try {
+        const data = new FormData();
+
+        data.append("id", userId);
+        data.append("fullName", formData.fullName);
+        data.append("url", formData.url || "");
+        data.append("skills", formData.skills || "");
+        data.append("bio", formData.bio || "");
+
+        data.append("email", user.email || "");
+        data.append("userName", user.userName || "");
+        data.append("phoneNumber", user.phoneNumber || "");
+        data.append("role", user.role || "");
+        data.append("participationID", "0");
+
+        if (selectedFile) {
+            data.append("ProfileImage", selectedFile);
         }
-    };
 
-    const handleProjectChange = (index, field, value) => {
-        const updatedProjects = [...formData.pastProjects];
-        updatedProjects[index][field] = value;
-        setFormData({ ...formData, pastProjects: updatedProjects });
-    };
-
-    const addProjectField = () => {
-        setFormData({
-            ...formData,
-            pastProjects: [...formData.pastProjects, { title: "", link: "" }]
+        const res = await apiFetch(`${baseUrl}api/Login/UpdateUser`, {
+            method: 'PUT',
+            body: data
         });
-    };
 
-    const removeProjectField = (index) => {
-        const updatedProjects = formData.pastProjects.filter((_, i) => i !== index);
-        setFormData({ ...formData, pastProjects: updatedProjects });
-    };
+        if (!res.ok) throw new Error("فشل في تحديث البيانات");
 
-    const handleSave = async (e) => {
-        e.preventDefault();
-        setLoading(true);
-
+        // ✅ success UI
         Swal.fire({
-            title: 'جاري الحفظ...',
-            allowOutsideClick: false,
-            didOpen: () => { Swal.showLoading(); }
+            icon: 'success',
+            title: 'تم الحفظ بنجاح',
+            timer: 1500,
+            showConfirmButton: false
         });
-        
-        try {
-            await new Promise(resolve => setTimeout(resolve, 1000));
 
-            const updatedUser = {
-                ...user,
-                ...formData,
-                image: imagePreview
-            };
-            login(updatedUser); 
+        navigate('/profile');
 
-            Swal.fire({
-                icon: 'success',
-                title: 'تم التحديث',
-                text: 'تم حفظ التعديلات بنجاح في ملفك الشخصي',
-                confirmButtonColor: mainGreen
-            }).then(() => navigate('/profile'));
-        } catch (err) {
-            Swal.fire({ icon: 'error', title: 'حدث خطأ ما' });
-        } {
-            setLoading(false);
-        }
-    };
+    } catch (err) {
+        console.error(err);
 
+        // ❌ error UI
+        Swal.fire({
+            icon: 'error',
+            title: 'حدث خطأ أثناء الحفظ'
+        });
+
+    } finally {
+        setLoading(false);
+        Swal.close(); // 🔥 THIS FIXES INFINITE LOADING
+    }
+};
     return (
         <div className="container py-5 text-end" dir="rtl" style={{ fontFamily: 'Cairo, sans-serif' }}>
             <style>
@@ -121,8 +141,6 @@ export const EditProfile = () => {
                         background: ${mainGreen}; color: white; width: 35px; height: 35px; 
                         border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer;
                     }
-                    .project-box { background: #f1f5f9; border-radius: 15px; padding: 15px; margin-bottom: 12px; position: relative; }
-                    .remove-project-btn { position: absolute; top: 10px; left: 10px; border: none; background: none; color: #dc3545; }
                 `}
             </style>
 
@@ -143,80 +161,86 @@ export const EditProfile = () => {
                             <div className="row g-4">
                                 <div className="col-md-12">
                                     <label className="small fw-bold mb-2 text-secondary">الاسم الكامل</label>
-                                    <input type="text" className="form-control fw-bold" value={formData.fullName} 
-                                        onChange={(e) => setFormData({...formData, fullName: e.target.value})} required />
+                                    <input
+                                        type="text"
+                                        className="form-control fw-bold"
+                                        value={formData.fullName}
+                                        onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                                        required
+                                    />
                                 </div>
 
                                 <div className="col-md-6">
                                     <label className="small fw-bold mb-2 text-secondary">الكلية</label>
-                                    <input type="text" className="form-control" placeholder="مثلاً: كلية الهندسة وتكنولوجيا المعلومات" 
-                                        value={formData.faculty} onChange={(e) => setFormData({...formData, faculty: e.target.value})} />
+                                    <input
+                                        disabled
+                                        type="text"
+                                        className="form-control"
+                                        placeholder="مثلاً: كلية الهندسة وتكنولوجيا المعلومات"
+                                        value="IT"
+                                    />
                                 </div>
 
                                 <div className="col-md-6">
                                     <label className="small fw-bold mb-2 text-secondary">التخصص الجامعي الرئيسي</label>
-                                    <input type="text" className="form-control" placeholder="مثلاً: هندسة البرمجيات" 
-                                        value={formData.universityMajor} onChange={(e) => setFormData({...formData, universityMajor: e.target.value})} />
+                                    <input
+                                        disabled
+                                        type="text"
+                                        className="form-control"
+                                        placeholder="مثلاً: هندسة البرمجيات"
+                                        value={formData.role}
+                                    />
                                 </div>
 
                                 <div className="col-12">
-                                    <label className="small fw-bold mb-2 text-secondary">مجال العمل / التركيز الدقيق</label>
-                                    <input type="text" className="form-control" placeholder="مثلاً: Full-Stack Developer / جرافيك ديزاين" 
-                                        value={formData.workField} onChange={(e) => setFormData({...formData, workField: e.target.value})} />
+                                    <label className="small fw-bold mb-2 text-secondary">المهارات</label>
+                                    <input
+                                        type="text"
+                                        className="form-control"
+                                        placeholder="مثلاً: React, C#, SQL"
+                                        value={formData.skills}
+                                        onChange={(e) => setFormData({ ...formData, skills: e.target.value })}
+                                    />
                                 </div>
 
-                                <div className="col-md-4">
+                                <div className="col-md-12">
                                     <label className="small fw-bold mb-2 text-secondary">رابط ملف GitHub</label>
-                                    <input type="url" className="form-control text-start" dir="ltr" placeholder="https://github.com/username"
-                                        value={formData.githubUrl} onChange={(e) => setFormData({...formData, githubUrl: e.target.value})} />
+                                    <input
+                                        type="url"
+                                        className="form-control text-start"
+                                        dir="ltr"
+                                        placeholder="https://github.com/username"
+                                        value={formData.url}
+                                        onChange={(e) => setFormData({ ...formData, url: e.target.value })}
+                                    />
                                 </div>
 
-                                <div className="col-md-4">
-                                    <label className="small fw-bold mb-2 text-secondary">رابط ملف LinkedIn</label>
-                                    <input type="url" className="form-control text-start" dir="ltr" placeholder="https://linkedin.com/in/username"
-                                        value={formData.linkedinUrl} onChange={(e) => setFormData({...formData, linkedinUrl: e.target.value})} />
-                                </div>
-
-                                <div className="col-md-4">
-                                    <label className="small fw-bold mb-2 text-secondary">المعرض الشخصي / Portfolio</label>
-                                    <input type="url" className="form-control text-start" dir="ltr" placeholder="https://myportfolio.com"
-                                        value={formData.portfolioUrl} onChange={(e) => setFormData({...formData, portfolioUrl: e.target.value})} />
-                                </div>
-
-                                <div className="col-12">
-                                    <div className="d-flex justify-content-between align-items-center mb-3">
-                                        <label className="small fw-bold text-secondary">المشاريع والأعمال السابقة</label>
-                                        <button type="button" className="btn btn-sm btn-outline-success px-3 rounded-pill fw-bold" onClick={addProjectField}>
-                                            + إضافة عمل/مشروع
-                                        </button>
-                                    </div>
-                                    {formData.pastProjects.map((project, index) => (
-                                        <div key={index} className="project-box">
-                                            {formData.pastProjects.length > 1 && (
-                                                <button type="button" className="remove-project-btn" onClick={() => removeProjectField(index)}>
-                                                    <i className="bi bi-trash-fill"></i>
-                                                </button>
-                                            )}
-                                            <div className="row g-2">
-                                                <div className="col-md-5">
-                                                    <input type="text" className="form-control bg-white mb-2 mb-md-0" placeholder="اسم المشروع أو العمل" 
-                                                        value={project.title} onChange={(e) => handleProjectChange(index, 'title', e.target.value)} />
-                                                </div>
-                                                <div className="col-md-7">
-                                                    <input type="url" className="form-control bg-white text-start" dir="ltr" placeholder="رابط المشروع (Behance, GitHub, Google Drive)" 
-                                                        value={project.link} onChange={(e) => handleProjectChange(index, 'link', e.target.value)} />
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))}
+                                <div className="col-md-12">
+                                    <label className="small fw-bold mb-2 text-secondary">نبذة تعريفية</label>
+                                    <textarea
+                                        className="form-control"
+                                        placeholder="اكتب نبذة مختصرة عن نفسك..."
+                                        rows={3}
+                                        value={formData.bio}
+                                        onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
+                                    />
                                 </div>
                             </div>
 
                             <div className="d-flex gap-3 mt-5">
-                                <button type="submit" disabled={loading} className="btn btn-success flex-grow-1 py-3 fw-bold rounded-4 shadow-sm border-0" style={{backgroundColor: mainGreen}}>
+                                <button
+                                    type="submit"
+                                    disabled={loading}
+                                    className="btn btn-success flex-grow-1 py-3 fw-bold rounded-4 shadow-sm border-0"
+                                    style={{ backgroundColor: mainGreen }}
+                                >
                                     حفظ التغييرات
                                 </button>
-                                <button type="button" className="btn btn-light px-4 py-3 fw-bold rounded-4 text-muted border" onClick={() => navigate('/profile')}>
+                                <button
+                                    type="button"
+                                    className="btn btn-light px-4 py-3 fw-bold rounded-4 text-muted border"
+                                    onClick={() => navigate('/profile')}
+                                >
                                     إلغاء
                                 </button>
                             </div>
