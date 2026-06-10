@@ -207,7 +207,7 @@ export const Dashboard = () => {
                                         <button className="btn-prime shadow-sm" onClick={() => navigate('/login')}>
                                             ابدأ رحلتك الآن
                                         </button>
-                                        <button className="btn-ghost" onClick={() => navigate('/verify-email')}>
+                                        <button className="btn-ghost" onClick={() => navigate('/setup-profile')}>
                                             إنشاء حساب جديد
                                         </button>
                                     </>

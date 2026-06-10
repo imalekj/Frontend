@@ -59,12 +59,8 @@ export const CompetitionsPage = () => {
     });
 
     const handleCreatePost = () => {
-        if (isLoggedIn) {
-            navigate('/create-post');
-        } else {
-            navigate('/login');
-        }
-    };
+    navigate('/create-post');
+};
 
     return (
         <div className="container py-5 text-end" dir="rtl" style={{ fontFamily: 'Cairo, sans-serif', maxWidth: '1200px', backgroundColor: AppColors.backgroundCard }}>

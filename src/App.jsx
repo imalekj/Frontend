@@ -63,7 +63,7 @@ function App() {
                 
                 <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
                 <Route path="/edit-profile" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
-                <Route path="/create-post" element={<ProtectedRoute><CreatePost /></ProtectedRoute>} />
+                <Route path="/create-post" element={<CreatePost />} />
                 <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
                 <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
                 <Route path="/chat/:id" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
