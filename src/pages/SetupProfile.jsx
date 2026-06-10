@@ -4,8 +4,7 @@ import toast, { Toaster } from 'react-hot-toast';
 import Swal from 'sweetalert2';
 import { useAuth } from '../context/AuthContext';
 import { AppColors } from '../theme/AppColors';
-
-
+const baseUrl = import.meta.env.VITE_API_BASE_URL;
 const facultiesData = {
     "كلية تكنولوجيا المعلومات": [
         { id: 1, name: "هندسة البرمجيات" },
@@ -47,6 +46,7 @@ const facultiesData = {
     ]
 };
 
+
 export const SetupProfile = () => {
     const navigate = useNavigate();
     const { login } = useAuth();
@@ -63,7 +63,7 @@ export const SetupProfile = () => {
         password: '',
         role: 'student',
         faculty: 'كلية تكنولوجيا المعلومات',
-        majorId: 1, 
+        universityMajor:1,
         workField: '',
         githubUrl: '',
         skills: [],
@@ -97,20 +97,15 @@ export const SetupProfile = () => {
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
-    const handleMajorChange = (e) => {
-        const selectedId = parseInt(e.target.value);
-        setFormData(prev => ({ ...prev, majorId: selectedId }));
-    };
+ const handleFacultyChange = (e) => {
+    const selectedFaculty = e.target.value;
 
-    const handleFacultyChange = (e) => {
-        const selectedFaculty = e.target.value;
-        const firstMajorInFaculty = facultiesData[selectedFaculty][0];
-        setFormData(prev => ({
-            ...prev,
-            faculty: selectedFaculty,
-            majorId: firstMajorInFaculty.id
-        }));
-    };
+    setFormData(prev => ({
+        ...prev,
+        faculty: selectedFaculty,
+        universityMajor: facultiesData[selectedFaculty][0].id
+    }));
+};
 
     const addSkill = (e) => {
         if (e.key === 'Enter' && skillInput.trim() !== "") {
@@ -152,10 +147,7 @@ export const SetupProfile = () => {
             formDataToSend.append("Role", "true");
             formDataToSend.append("githubUrl", formData.githubUrl || "");
             formDataToSend.append("workField", formData.workField || "");
-            
-            // التعديل الجوهري: إرسال الحقل كـ MajorId بصيغة رقمية مدعومة لتوافق قاعدة البيانات
-            formDataToSend.append("MajorId", formData.majorId);
-            
+            formDataToSend.append("SpecializationId", formData.universityMajor || "");
             formDataToSend.append("Description", formData.description || "");
             formDataToSend.append("skills", formData.skills.join(","));
 
@@ -163,7 +155,7 @@ export const SetupProfile = () => {
                 formDataToSend.append("ProfileImage", formData.profileImage);
             }
 
-            const response = await fetch("https://localhost:7011/api/Login/Register", {
+                const response = await fetch(`${baseUrl}api/Login/Register`, {
                 method: "POST",
                 body: formDataToSend
             });
@@ -260,12 +252,18 @@ export const SetupProfile = () => {
                                         </div>
                                         <div className="col-md-6">
                                             <label className="small fw-bold mb-1">التخصص</label>
-                                            {/* ربط قيمة الـ select بـ majorId والـ onChange بـ handleMajorChange لقراءة الـ value الرقمي */}
-                                            <select name="majorId" className="form-select input-custom" value={formData.majorId} onChange={handleMajorChange}>
-                                                {facultiesData[formData.faculty].map(m => (
-                                                    <option key={m.id} value={m.id}>{m.name}</option>
-                                                ))}
-                                            </select>
+                                          <select
+                                                            name="universityMajor"
+                                                            className="form-select input-custom"
+                                                            value={formData.universityMajor}
+                                                            onChange={handleInputChange}
+                                                        >
+                                                            {facultiesData[formData.faculty].map(m => (
+                                                                <option key={m.id} value={m.id}>
+                                                                    {m.name}
+                                                                </option>
+                                                            ))}
+                                          </select>
                                         </div>
                                         <div className="col-12">
                                             <label className="small fw-bold mb-1">الرابط التعريفي (Portfolio / Social)</label>

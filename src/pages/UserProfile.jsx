@@ -12,8 +12,12 @@ export const UserProfile = () => {
 
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [projectsCount, setProjectsCount] = useState(0);
+    const [finishedCount, setFinishedCount] = useState(0);
+    const [currentProjects, setCurrentProjects] = useState([]);
+    const [prevProjects, setPrevProjects] = useState([]);
     const baseUrl = import.meta.env.VITE_API_BASE_URL;
-    
+
     const isOwnProfile = currentUser?.id === parseInt(userId) || currentUser?.id === userId;
 
     useEffect(() => {
@@ -21,41 +25,52 @@ export const UserProfile = () => {
             try {
                 setLoading(true);
 
-                const response = await apiFetch(`${baseUrl}api/Login/GetUserInfo/${userId}`);
-                
-                if (!response.ok) {
-                    throw new Error("فشل في جلب البيانات");
-                }
+                const [userRes, countRes, finishedRes, currentRes, prevRes] = await Promise.all([
+                    apiFetch(`${baseUrl}api/Login/GetUserInfo/${userId}`),
+                    apiFetch(`${baseUrl}api/Profile/GetCountOfAllProjects/${userId}`),
+                    apiFetch(`${baseUrl}api/Profile/GetCountOfFinshedProjects/${userId}`),
+                    apiFetch(`${baseUrl}api/Profile/GetCurrentProjects/${userId}`),
+                    apiFetch(`${baseUrl}api/Profile/GetprevProjcts/${userId}`),
+                    apiFetch(`${baseUrl}api/Profile/GetSpecialistNameByUserId/${userId}`)
+                ]);
 
-                const data = await response.json();
+                if (!userRes.ok) throw new Error("فشل في جلب البيانات");
+
+                const userData = await userRes.json();
+                const countData = countRes.ok ? await countRes.json() : 0;
+                const finishedData = finishedRes.ok ? await finishedRes.json() : 0;
+                const currentData = currentRes.ok ? await currentRes.json() : [];
+                const prevData = prevRes.ok ? await prevRes.json() : [];
+                
 
                 setTimeout(() => {
-                    const formattedData = {
-                        id: data.id,
-                        name: data.fullName || data.name,
-                        role: data.role || "غير محدد",
-                        githubUrl: data.githubUrl || "",
-                        bio: data.bio || "",
-                        stats: data.stats || { competitions: 0, wins: 0, teams: 0 },
-                        skills: data.skills || [],
-                        previousWork: data.previousWork || [],
-                        activeCompetitions: data.activeCompetitions || [],
-                        imagePath: data.imagePath
-                    };
-                        
-                    setUser(formattedData);
+                    setUser({
+                        id: userData.id,
+                        name: userData.fullName || userData.name,
+                        role: userData.role || "غير محدد",
+                        githubUrl: userData.githubUrl || "",
+                        bio: userData.bio || "",
+                        skills: userData.skills || [],
+                        imagePath: userData.imagePath
+                    });
+                    
+                    setProjectsCount(countData?.count ?? countData ?? 0);
+                    setFinishedCount(finishedData?.count ?? finishedData ?? 0);
+                    setCurrentProjects(Array.isArray(currentData) ? currentData : []);
+                    setPrevProjects(Array.isArray(prevData) ? prevData : []);
+
                     setLoading(false);
                 }, 800);
 
             } catch (error) {
-                console.error("Error fetching user:", error);
+                console.error("Error fetching user data:", error);
                 setLoading(false);
             }
         };
 
         fetchUserData();
-    }, [userId, currentUser, isOwnProfile, baseUrl]);
-
+    }, [userId, baseUrl]);
+    console.log(user);
     if (loading) return (
         <div className="d-flex justify-content-center align-items-center min-vh-100">
             <div className="spinner-border text-success" role="status"></div>
@@ -111,6 +126,8 @@ export const UserProfile = () => {
 
             <div className="profile-container">
                 <div className="row g-4">
+
+                    {/* Left Column */}
                     <div className="col-lg-4">
                         <div className="main-card mb-4">
                             <div className="header-gradient">
@@ -125,7 +142,9 @@ export const UserProfile = () => {
                             
                             <div className="info-section">
                                 <h4 className="fw-bold text-dark mb-1">
-                                    {user.name} {isOwnProfile && <span className="badge bg-secondary-subtle text-secondary fs-6 ms-2">أنت</span>}
+                                    {user.name} {isOwnProfile && (
+                                        <span className="badge bg-secondary-subtle text-secondary fs-6 ms-2">أنت</span>
+                                    )}
                                 </h4>
                                 <p className="text-muted small mb-4">{user.role}</p>
 
@@ -156,97 +175,92 @@ export const UserProfile = () => {
 
                                 <div className="mb-4">
                                     <h6 className="fw-bold text-dark small mb-2">نبذة تعريفية</h6>
-                                    <p className="text-secondary small lh-base mb-0">{user.bio || "لا توجد نبذة تعريفية مضافة."}</p>
+                                    <p className="text-secondary small lh-base mb-0">
+                                        {user.bio || "لا توجد نبذة تعريفية مضافة."}
+                                    </p>
                                 </div>
 
                                 <div>
                                     <h6 className="fw-bold text-dark small mb-2">المهارات</h6>
-                                    <div className="d-flex flex-wrap gap-2">
-                                        {user.skills && user.skills.length > 0 ? (
-                                            user.skills.map(skill => (
-                                                <span key={skill} className="skill-tag">{skill}</span>
-                                            ))
+                                <div className="d-flex flex-wrap gap-2">
+                                        {user.skills ? (
+                                            <span>{user.skills}</span>
                                         ) : (
                                             <span className="text-muted small">لم يتم إضافة مهارات</span>
                                         )}
                                     </div>
-                                </div>
+                                                                    </div>
                             </div>
                         </div>
                     </div>
 
+                    {/* Right Column */}
                     <div className="col-lg-8">
+
+                        {/* Stats */}
                         <div className="row g-3 mb-4 text-center">
                             <div className="col-4">
                                 <div className="stat-box">
-                                    <h4 className="fw-bold mb-0" style={{ color: mainGreen }}>{user.stats?.competitions || 0}</h4>
-                                    <small className="text-muted fw-600">مسابقة</small>
+                                    <h4 className="fw-bold mb-0" style={{ color: mainGreen }}>{projectsCount}</h4>
+                                    <small className="text-muted">مسابقة</small>
                                 </div>
                             </div>
                             <div className="col-4">
                                 <div className="stat-box">
-                                    <h4 className="fw-bold mb-0 text-warning">{user.stats?.wins || 0}</h4>
-                                    <small className="text-muted fw-600">إنجاز</small>
+                                    <h4 className="fw-bold mb-0 text-warning">{finishedCount}</h4>
+                                    <small className="text-muted">إنجاز</small>
                                 </div>
                             </div>
                             <div className="col-4">
                                 <div className="stat-box">
-                                    <h4 className="fw-bold mb-0 text-primary">{user.stats?.teams || 0}</h4>
-                                    <small className="text-muted fw-600">فريق</small>
+                                    <h4 className="fw-bold mb-0 text-primary">{currentProjects.length}</h4>
+                                    <small className="text-muted">فريق</small>
                                 </div>
                             </div>
                         </div>
 
+                        {/* Previous Projects */}
                         <div className="main-card mb-4">
                             <h6 className="fw-bold mb-4 d-flex align-items-center gap-2">
                                 <i className="bi bi-collection text-success"></i> المشاريع السابقة
                             </h6>
                             <div className="row g-3">
-                                {user.previousWork && user.previousWork.length > 0 ? (
-                                    user.previousWork.map(work => (
-                                        <div key={work.id} className="col-md-6">
-                                            <div className="work-item">
-                                                <h6 className="fw-bold mb-1 small text-dark">{work.title}</h6>
-                                                <span className="text-muted" style={{ fontSize: '0.7rem' }}>
-                                                    <i className="bi bi-cpu me-1"></i> {work.tech}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    ))
-                                ) : (
+                                {prevProjects.length > 0 ? (
+                                   prevProjects.map((title, index) => (
+                            <div key={index} className="col-md-6">
+                                <div className="work-item">
+                                <h6 className="fw-bold mb-1 small text-dark">{title}</h6>
+                                </div>
+                            </div>
+                            ))
+                                                            ) : (
                                     <p className="text-muted small text-center py-3 mb-0">لا توجد مشاريع مضافة حالياً</p>
                                 )}
                             </div>
                         </div>
 
+                        {/* Current / Active Projects */}
                         <div className="main-card">
                             <h6 className="fw-bold mb-4 d-flex align-items-center gap-2">
                                 <i className="bi bi-activity text-danger"></i> النشاط الحالي
                             </h6>
-                            <div className="d-flex flex-column gap-3">
-                                {user.activeCompetitions && user.activeCompetitions.length > 0 ? (
-                                    user.activeCompetitions.map(comp => (
-                                        <div key={comp.id} className="p-3 d-flex justify-content-between align-items-center flex-wrap gap-3 border rounded-4 bg-light bg-opacity-50">
-                                            <div>
-                                                <h6 className="fw-bold mb-1 small text-dark">{comp.title}</h6>
-                                                <div className="d-flex gap-3 small" style={{ fontSize: '0.75rem' }}>
-                                                    <span className="text-success fw-bold">{comp.role}</span>
-                                                    <span className="text-muted"><i className="bi bi-clock me-1"></i> {comp.date}</span>
-                                                </div>
-                                            </div>
-                                            <button 
-                                                className="btn btn-sm btn-outline-dark rounded-pill px-3 fw-bold"
-                                                onClick={() => navigate(`/competition/${comp.id}`)}
-                                            >
-                                                التفاصيل
-                                            </button>
-                                        </div>
-                                    ))
+                              <div className="row g-3">
+                                {currentProjects.length > 0 ? (
+                                   currentProjects.map((title, index) => (
+                            <div key={index} className="col-md-6">
+                                <div className="work-item">
+                                <h6 className="fw-bold mb-1 small text-dark">{title}</h6>
+                                </div>
+                            </div>
+                            ))
+                                      
+                                    
                                 ) : (
                                     <p className="text-muted small text-center py-2 mb-0">لا توجد أنشطة أو مسابقات جارية حالياً</p>
                                 )}
                             </div>
                         </div>
+
                     </div>
                 </div>
             </div>
