@@ -1,29 +1,85 @@
 import React, { useState, useEffect, useRef, useContext } from 'react';
 import Swal from 'sweetalert2';
 import zujLogo from '../assets/logo.png';
-import { AuthContext } from '../context/AuthContext';
+import { useAuth } from '../context/AuthContext';
 import { AppColors } from '../theme/AppColors';
+import { apiFetch } from '../api';
 
 export const Chat = () => {
     const scrollRef = useRef(null);
-    const { user } = useContext(AuthContext); 
     const [view, setView] = useState('inbox');
     const [activeChat, setActiveChat] = useState(null);
     const [newMessage, setNewMessage] = useState("");
     const [loading, setLoading] = useState(false);
-
+    const [specializationUsers, setSpecializationUsers] = useState([]);
+    const [loadingUsers, setLoadingUsers] = useState(false);
+    const baseUrl = import.meta.env.VITE_API_BASE_URL;
+    const { user, token } = useAuth();
+    const [specializationName, setSpecializationName] = useState('');
     const [messages, setMessages] = useState([
-        { id: 1, chatId: 1, text: "أهلاً بالجميع، هل نبدأ بالعمل؟", sender: "سارة", senderId: "user_sara", time: "10:30 AM", isMe: false },
-        { id: 2, chatId: 1, text: "أنا جاهز تماماً!", sender: "أنا", time: "10:32 AM", isMe: true },
-        { id: 3, chatId: 2, text: "مرحباً مالك، أعجبتني مهاراتك!", sender: "ليث أحمد", senderId: "user_leith", time: "11:05 AM", isMe: false },
+        
     ]);
 
     const [contacts, setContacts] = useState([
-        { id: 1, name: "مبدعو الزيتونة", lastMsg: "سارة: أهلاً بالجميع...", unread: 2, type: 'team', icon: 'people-fill', leaderId: user?.id || 'me' },
-        { id: 4, name: "نادي الأمن السيبراني", lastMsg: "عمر: تم تحديث الرابط", unread: 0, type: 'team', icon: 'shield-lock-fill', leaderId: 'other' },
-        { id: 2, name: "ليث أحمد", status: "متصل الآن", avatar: "Leith", online: true, type: 'individual' },
-        { id: 3, name: "ديما علي", status: "نشط منذ 5 دقائق", avatar: "Dima", online: false, type: 'individual' }
+       
     ]);
+
+    
+            useEffect(() => {
+            const fetchSpecialization = async () => {
+                if (!user?.id) return;
+        
+                try {
+                    const response = await apiFetch(
+                        `${baseUrl}api/Profile/GetSpecialistNameByUserId/${user.id}`
+                    );
+        
+                    if (!response.ok) {
+                        throw new Error('Failed to fetch specialization');
+                    }
+        
+                    const data = await response.text(); // or response.text()
+                    setSpecializationName(data);
+        
+                    
+                } catch (error) {
+                    console.error('Error fetching specialization:', error);
+                }
+            };
+        
+            fetchSpecialization();
+        }, [user?.id, baseUrl]);
+
+
+    const fetchUsersBySpecialization = async (specializationName) => {
+        setLoadingUsers(true);
+        try {
+          const response = await apiFetch(
+           `${baseUrl}api/Chat/GetAllUserBySpecializationName/${(specializationName)}`
+                            );
+          const data = await response.json();
+            setSpecializationUsers(data);
+
+const mapped = data.map(u => ({
+    id: u.id,
+    name: u.userName,
+    type: 'individual',
+    lastMsg: '',
+    unread: 0,
+    imagePath: u.imagePath,
+    online: false
+}));
+
+setContacts(mapped);
+        } catch (error) {
+           
+            Swal.fire('خطأ', 'فشل في تحميل قائمة المستخدمين', 'error');
+        } finally {
+            setLoadingUsers(false);
+        }
+    };
+
+  
 
     useEffect(() => {
         if (activeChat && activeChat.type === 'individual') {
@@ -38,11 +94,60 @@ export const Chat = () => {
         }
     }, [messages, view]);
 
+
+    console.log("specializationName:", specializationName);
+console.log("users:", specializationUsers);
+
     const handleCreateChat = (type) => {
+        if (type === 'private') {
+            if (loadingUsers) {
+                Swal.fire('جاري التحميل...', 'يرجى الانتظار', 'info');
+                return;
+            }
+
+            if (specializationUsers.length === 0) {
+                Swal.fire('لا يوجد مستخدمون', 'لم يتم العثور على مستخدمين متاحين', 'warning');
+                return;
+            }
+
+            const options = specializationUsers.reduce((acc, u) => {
+                acc[u.id] = u.userName;
+                return acc;
+            }, {});
+
+            Swal.fire({
+                title: 'بدء محادثة خاصة',
+                input: 'select',
+                inputOptions: options,
+                inputPlaceholder: 'اختر مستخدماً',
+                showCancelButton: true,
+                confirmButtonColor: AppColors.primaryGreen,
+                confirmButtonText: 'بدء',
+                cancelButtonText: 'إلغاء'
+            }).then((result) => {
+                if (result.isConfirmed && result.value) {
+                    const selectedUser = specializationUsers.find(u => String(u.id) === String(result.value));
+                    const newChat = {
+                        id: Date.now(),
+                        name: selectedUser?.userName || result.value,
+                        type: 'individual',
+                        lastMsg: 'تم إنشاء المحادثة حديثاً',
+                        avatar: selectedUser?.imagePath || null,
+                        online: false
+                    };
+                    setContacts(prev => [newChat, ...prev]);
+                    setActiveChat(newChat);
+                    setView('chat');
+                    Swal.fire('تم!', 'تم إنشاء المحادثة بنجاح', 'success');
+                }
+            });
+            return;
+        }
+
         Swal.fire({
-            title: type === 'group' ? 'إنشاء مجموعة جديدة' : 'بدء محادثة خاصة',
+            title: 'إنشاء مجموعة جديدة',
             input: 'text',
-            inputPlaceholder: type === 'group' ? 'اسم المجموعة' : 'الرقم الجامعي أو الاسم',
+            inputPlaceholder: 'اسم المجموعة',
             showCancelButton: true,
             confirmButtonColor: AppColors.primaryGreen,
             confirmButtonText: 'إنشاء',
@@ -52,13 +157,13 @@ export const Chat = () => {
                 const newChat = {
                     id: Date.now(),
                     name: result.value,
-                    type: type === 'group' ? 'team' : 'individual',
-                    lastMsg: "تم إنشاء المحادثة حديثاً",
-                    icon: type === 'group' ? 'people-fill' : null,
-                    leaderId: type === 'group' ? user?.id || 'me' : null
+                    type: 'team',
+                    lastMsg: 'تم إنشاء المحادثة حديثاً',
+                    icon: 'people-fill',
+                    leaderId: user?.id || 'me'
                 };
-                setContacts([newChat, ...contacts]);
-                Swal.fire('تم!', 'تم إنشاء المحادثة بنجاح', 'success');
+                setContacts(prev => [newChat, ...prev]);
+                Swal.fire('تم!', 'تم إنشاء المجموعة بنجاح', 'success');
             }
         });
     };
@@ -93,7 +198,11 @@ export const Chat = () => {
             }
         });
     };
-
+    useEffect(() => {
+    if (specializationName) {
+        fetchUsersBySpecialization(specializationName);
+    }
+}, [specializationName]);
     const handleSendMessage = (e) => {
         e.preventDefault();
         if (!newMessage.trim()) return;
@@ -105,8 +214,13 @@ export const Chat = () => {
             time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
             isMe: true
         };
-        setMessages([...messages, msg]);
+        setMessages(prev => [...prev, msg]);
         setNewMessage("");
+    };
+
+    const getAvatarSrc = (contact) => {
+        if (contact?.imagePath) return `${baseUrl}/${contact.imagePath}`;
+        return `https://static.vecteezy.com/system/resources/thumbnails/009/292/244/small/default-avatar-icon-of-social-media-user-vector.jpg`;
     };
 
     return (
@@ -123,37 +237,57 @@ export const Chat = () => {
                     .action-btn-circle { width: 40px; height: 40px; border-radius: 50%; border: none; display: flex; align-items: center; justify-content: center; transition: 0.3s; color: white; }
                     .btn-create { background: ${AppColors.primaryGreen}; color: white; border: none; border-radius: 12px; padding: 10px 20px; font-weight: bold; transition: 0.3s; }
                     .btn-create:hover { background: ${AppColors.primaryGreenGradientEnd}; transform: translateY(-2px); }
+                    .loading-overlay { position: absolute; inset: 0; background: rgba(255,255,255,0.7); display: flex; align-items: center; justify-content: center; z-index: 10; }
                 `}
             </style>
 
             <div className="list-container shadow-lg border position-relative">
-                {loading && <div className="loading-overlay"><div className="spinner-border text-success"></div></div>}
+                {loading && (
+                    <div className="loading-overlay">
+                        <div className="spinner-border text-success"></div>
+                    </div>
+                )}
 
                 {view === 'inbox' && (
                     <>
                         <div className="p-4 border-bottom bg-white d-flex justify-content-between align-items-center shadow-sm">
                             <h5 className="fw-bold mb-0" style={{ color: AppColors.primaryGreen }}>المحادثات الطلابية</h5>
                             <div className="d-flex gap-2">
-                                <button className="btn-create shadow-sm small" onClick={() => handleCreateChat('private')}>
-                                    <i className="bi bi-person-plus-fill ms-2"></i>محادثة
+                                <button className="btn-create shadow-sm small" onClick={() => handleCreateChat('private')} disabled={loadingUsers}>
+                                    {loadingUsers
+                                        ? <span className="spinner-border spinner-border-sm ms-2"></span>
+                                        : <i className="bi bi-person-plus-fill ms-2"></i>
+                                    }
+                                    محادثة
                                 </button>
                                 <button className="btn-create shadow-sm small" style={{ backgroundColor: AppColors.accentBlue }} onClick={() => handleCreateChat('group')}>
                                     <i className="bi bi-people-fill ms-2"></i>مجموعة
                                 </button>
                             </div>
                         </div>
+
                         <div className="overflow-auto flex-grow-1">
                             {contacts.map(item => (
                                 <div key={item.id} className="list-item" onClick={() => { setActiveChat(item); setView('chat'); }}>
                                     <div className="position-relative">
                                         {item.type === 'individual' ? (
-                                            <img src={`https://static.vecteezy.com/system/resources/thumbnails/009/292/244/small/default-avatar-icon-of-social-media-user-vector.jpg`} className="rounded-circle border" width="55" height="55" alt="" />
+                                            <img
+                                                src={getAvatarSrc(item)}
+                                                className="rounded-circle border"
+                                                width="55" height="55"
+                                                alt={item.name}
+                                                onError={(e) => { e.target.src = `https://static.vecteezy.com/system/resources/thumbnails/009/292/244/small/default-avatar-icon-of-social-media-user-vector.jpg`; }}
+                                            />
                                         ) : (
-                                            <div className="text-white rounded-circle d-flex align-items-center justify-content-center shadow-sm" style={{ width: '55px', height: '55px', background: AppColors.primaryGreen }}>
+                                            <div className="text-white rounded-circle d-flex align-items-center justify-content-center shadow-sm"
+                                                style={{ width: '55px', height: '55px', background: AppColors.primaryGreen }}>
                                                 <i className={`bi bi-${item.icon} fs-4`}></i>
                                             </div>
                                         )}
-                                        {item.online && <span className="position-absolute bottom-0 end-0 rounded-circle border-2 border-white" style={{ width: '15px', height: '15px', background: AppColors.lightGreenTextDark }}></span>}
+                                        {item.online && (
+                                            <span className="position-absolute bottom-0 end-0 rounded-circle border-2 border-white"
+                                                style={{ width: '15px', height: '15px', background: AppColors.lightGreenTextDark }}></span>
+                                        )}
                                     </div>
                                     <div className="flex-grow-1">
                                         <div className="d-flex justify-content-between align-items-center mb-1">
@@ -177,13 +311,21 @@ export const Chat = () => {
                             <button className="btn border-0 fw-bold" style={{ color: AppColors.primaryGreen }} onClick={() => setView('inbox')}>
                                 <i className="bi bi-chevron-right ms-1"></i> رجوع
                             </button>
-                            
+
                             <div className="d-flex align-items-center gap-3">
                                 <div className="text-start">
                                     <div className="fw-bold" style={{ color: AppColors.textPrimary }}>{activeChat.name}</div>
-                                    <small className="text-success fw-bold" style={{ fontSize: '0.7rem' }}>{activeChat.type === 'team' ? 'مجموعة عمل' : 'نشط الآن'}</small>
+                                    <small className="text-success fw-bold" style={{ fontSize: '0.7rem' }}>
+                                        {activeChat.type === 'team' ? 'مجموعة عمل' : 'نشط الآن'}
+                                    </small>
                                 </div>
-                                <img src={activeChat.avatar ? `https://static.vecteezy.com/system/resources/thumbnails/009/292/244/small/default-avatar-icon-of-social-media-user-vector.jpg` : zujLogo} className="rounded-circle border" width="45" height="45" alt="" />
+                                <img
+                                    src={activeChat.type === 'individual' ? getAvatarSrc(activeChat) : zujLogo}
+                                    className="rounded-circle border"
+                                    width="45" height="45"
+                                    alt={activeChat.name}
+                                    onError={(e) => { e.target.src = zujLogo; }}
+                                />
                             </div>
 
                             <div className="d-flex gap-2">
@@ -211,7 +353,9 @@ export const Chat = () => {
                             {messages.filter(m => m.chatId === activeChat.id).map(msg => (
                                 <div key={msg.id} className={`d-flex flex-column ${msg.isMe ? 'align-items-start' : 'align-items-end'}`}>
                                     <div className={`bubble ${msg.isMe ? 'bubble-me' : 'bubble-other'}`}>
-                                        {!msg.isMe && activeChat.type === 'team' && <div className="fw-bold mb-1" style={{ fontSize: '0.7rem', opacity: 0.8 }}>{msg.sender}</div>}
+                                        {!msg.isMe && activeChat.type === 'team' && (
+                                            <div className="fw-bold mb-1" style={{ fontSize: '0.7rem', opacity: 0.8 }}>{msg.sender}</div>
+                                        )}
                                         <div>{msg.text}</div>
                                         <small className={`d-block mt-1 ${msg.isMe ? 'text-white-50' : 'text-muted'}`} style={{ fontSize: '0.65rem' }}>{msg.time}</small>
                                     </div>
