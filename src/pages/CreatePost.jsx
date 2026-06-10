@@ -8,6 +8,7 @@ export const CreatePost = () => {
     const navigate = useNavigate();
     const baseUrl = import.meta.env.VITE_API_BASE_URL;
     const [isAuthorized, setIsAuthorized] = useState(false);
+    const [imagePreview, setImagePreview] = useState(null); // لحفظ رابط معاينة الصورة المرفوعة
     
     const [formData, setFormData] = useState({
         title: '',
@@ -20,6 +21,7 @@ export const CreatePost = () => {
         location: 'أونلاين',
         content: '',
         skills: '',
+        imageFile: null // لحفظ ملف الصورة الفعلي لإرساله للباك اند
     });
 
     useEffect(() => {
@@ -52,6 +54,15 @@ export const CreatePost = () => {
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
+    // دالة التعامل مع اختيار الصورة وتوليد المعاينة
+    const handleImageChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            setFormData(prev => ({ ...prev, imageFile: file }));
+            setImagePreview(URL.createObjectURL(file)); // إنشاء رابط محلي لعرض الصورة فوراً
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
 
@@ -82,11 +93,13 @@ export const CreatePost = () => {
                 isGraduationProject: isProject, 
                 endDate: new Date(formData.deadline).toISOString(),
                 skills: formData.skills,
-                // إذا كان مشروع، نعتمد عدد الأعضاء مباشرة، وإذا مسابقة نتحقق من نوع المشاركة
                 availableSeats: isProject ? formData.maxMembers : (formData.participationType === "فريق" ? formData.maxMembers : 1),
                 projectLocation: formData.faculty, 
                 teamType: isProject ? "فريق" : formData.participationType,
-                numberOfAvailableSeats: formData.maxMembers
+                numberOfAvailableSeats: formData.maxMembers,
+                // ملاحظة للمناقشة: إذا كان الباك اند يستقبل الصورة كـ Base64 أو String أضفها هنا، 
+                // أما لو كان يستقبلها كـ FormData ستحتاج لتغيير الـ Payload إلى FormData.
+                postImage: imagePreview ? "uploaded_image_path" : null 
             };
 
             const token = localStorage.getItem("token");
@@ -122,7 +135,7 @@ export const CreatePost = () => {
     };
 
     const handleCancel = () => {
-        if (formData.title || formData.content) {
+        if (formData.title || formData.content || formData.imageFile) {
             Swal.fire({
                 title: 'تجاهل المسودة؟',
                 text: "لديك تغييرات غير محفوظة، هل أنت متأكد من الخروج؟",
@@ -164,6 +177,21 @@ export const CreatePost = () => {
                         padding: 8px 12px; font-size: 0.85rem; transition: 0.3s; color: ${AppColors.textPrimary};
                     }
                     .compact-input:focus { border-color: ${AppColors.primaryGreen}; box-shadow: 0 0 0 3px rgba(27, 94, 56, 0.05); outline: none; background: ${AppColors.backgroundCard}; }
+                    
+                    /* ستايل مخصص لمنطقة رفع الصورة */
+                    .image-upload-zone {
+                        border: 2px dashed ${AppColors.borderInput};
+                        background: ${AppColors.backgroundScreenLight};
+                        border-radius: 12px;
+                        cursor: pointer;
+                        transition: 0.3s;
+                        min-height: 140px;
+                    }
+                    .image-upload-zone:hover {
+                        border-color: ${AppColors.primaryGreen};
+                        background: rgba(27, 94, 56, 0.02);
+                    }
+
                     .btn-publish { background: ${AppColors.primaryGreen}; color: white; border-radius: 10px; padding: 10px; font-weight: 700; border: none; width: 100%; transition: 0.3s; }
                     .btn-publish:hover { background: ${AppColors.primaryDark}; transform: scale(1.02); }
                     .swal2-popup { font-family: 'Cairo', sans-serif !important; }
@@ -214,7 +242,29 @@ export const CreatePost = () => {
                                     required value={formData.deadline} onChange={handleChange} />
                             </div>
 
-                            {/* تظهر هذه الحقول فقط إذا كان المنشور "مسابقة" ويتم إخفاؤها في حال كان "مشروع" */}
+                            {/* [تعديل جديد]: صندوق رفع صورة الإعلان / الغلاف المخصص للمنشور */}
+                            <div className="col-12">
+                                <label className="form-label">صورة غلاف الإعلان (اختياري)</label>
+                                <div className="image-upload-zone d-flex flex-column align-items-center justify-content-center p-3 text-center"
+                                     onClick={() => document.getElementById('postImage').click()}>
+                                    
+                                    <input type="file" id="postImage" accept="image/*" className="d-none" onChange={handleImageChange} />
+                                    
+                                    {imagePreview ? (
+                                        <div className="position-relative w-100" style={{ maxHeight: '180px', overflow: 'hidden' }}>
+                                            <img src={imagePreview} alt="Preview" className="img-fluid rounded-3" style={{ maxHeight: '160px', objectFit: 'cover' }} />
+                                            <div className="small text-muted mt-1 fw-bold">اضغط لتغيير الصورة</div>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <i className="bi bi-image text-muted fs-2 mb-1"></i>
+                                            <span className="text-muted small fw-bold">اضغط هنا لإرفاق صورة للمسابقة أو المشروع</span>
+                                            <span className="text-muted" style={{ fontSize: '0.65rem' }}>يدعم صيغ JPG, PNG (حد أقصى 2MB)</span>
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+
                             {formData.category !== 'مشروع' && (
                                 <>
                                     <div className="col-12">
@@ -243,7 +293,6 @@ export const CreatePost = () => {
                                 </>
                             )}
 
-                            {/* يظهر حقل عدد الأعضاء دائماً للمشروع، ويظهر للمسابقة فقط إذا كانت المشاركة بنظام فريق */}
                             {(formData.category === 'مشروع' || formData.participationType === 'فريق') && (
                                 <div className="col-12">
                                     <label className="form-label">الحد الأقصى لأعضاء الفريق (عدد الأعضاء)</label>
