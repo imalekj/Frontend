@@ -19,7 +19,7 @@ export const Navbar = () => {
     const notifRef = useRef(null);
     const [notifications, setNotifications] = useState([]);
     const [notifCount, setNotifCount] = useState(0);
-
+    const [specializationName, setSpecializationName] = useState('');
     useEffect(() => {
         const fetchUser = async () => {
             if (!user?.id) return;
@@ -54,7 +54,31 @@ export const Navbar = () => {
         };
         fetchNotifications();
     }, [user?.id, token, baseUrl]);
+    
+    useEffect(() => {
+    const fetchSpecialization = async () => {
+        if (!user?.id) return;
 
+        try {
+            const response = await apiFetch(
+                `${baseUrl}api/Profile/GetSpecialistNameByUserId/${user.id}`
+            );
+
+            if (!response.ok) {
+                throw new Error('Failed to fetch specialization');
+            }
+
+            const data = await response.text(); // or response.text()
+            setSpecializationName(data);
+
+            console.log('Specialization:', data);
+        } catch (error) {
+            console.error('Error fetching specialization:', error);
+        }
+    };
+
+    fetchSpecialization();
+}, [user?.id, baseUrl]);
     const handleLogout = () => {
         setShowUserDropdown(false);
         Swal.fire({
@@ -84,16 +108,16 @@ export const Navbar = () => {
     };
 
 
-const imageUrl = `${baseUrl.replace(/\/$/, '')}${userInfo?.imagePath}`;
-
-
+const imageUrl = `${baseUrl}${userInfo?.imagePath}`;
+    
+    console.log(imageUrl);
     const handleSearch = (e) => {
         if (e.key === 'Enter' && searchQuery.trim() !== "") {
             navigate(`/leaderboard?search=${searchQuery}`);
         }
     };
 
-
+  
    
     return (
         <nav className="navbar navbar-expand-lg navbar-light bg-white border-bottom sticky-top py-2" dir="rtl" style={{ fontFamily: 'Cairo, sans-serif' }}>
@@ -190,7 +214,7 @@ const imageUrl = `${baseUrl.replace(/\/$/, '')}${userInfo?.imagePath}`;
                                     <div className="text-end d-none d-xl-block">
                                         <div className="fw-bold text-dark lh-1" style={{ fontSize: '0.85rem' }}>{user?.fullName || "مستخدم"}</div>
                                         <small className="text-muted" style={{ fontSize: '0.7rem' }}>
-                                            {userInfo?.universityFaculty || user?.universityFaculty || "طالب جامعة"}
+                                                    {specializationName}
                                         </small>
                                     </div>
                                     <img 
