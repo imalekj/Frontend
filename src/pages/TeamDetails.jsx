@@ -158,7 +158,7 @@ export const TeamDetails = () => {
                                     >
                                         <img
                                             src={member.imagePath
-                                                ? `${baseUrl.replace(/\/$/, '')}${member.imagePath}`
+                                                ? `${baseUrl}${member.imagePath}`
                                                 : getDefaultAvatar(member.id || member.fullName)
                                             }
                                             style={{ width: '50px', height: '50px', borderRadius: '12px', objectFit: 'cover' }}
@@ -214,6 +214,13 @@ export const TeamDetails = () => {
                         >
                             <i className="bi bi-box-arrow-right me-2"></i> مغادرة الفريق
                         </button>
+                        
+                      <button
+                        className="btn btn-outline-success w-100 py-3 fw-bold btn-action mt-2"
+                        onClick={() => navigate(`/chat/${teamId}`)}
+                        >
+                        <i className="bi bi-chat-dots me-2"></i> محادثة
+                       </button>
 
                         <hr className="my-4 opacity-25" />
                         <div className="text-center">
