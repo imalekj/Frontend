@@ -159,7 +159,7 @@ export const CompetitionDetails = () => {
                         
                         <div className="publisher-mini mb-4 shadow-sm-hover d-inline-flex" onClick={handlePublisherProfileClick}>
                             <img
-                                src={user2?.imagePath ? `https://localhost:7011${user2.imagePath}` : "https://api.dicebear.com/7.x/initials/svg?seed=Z"}
+                                src={user2?.imagePath ? `${baseUrl}${user2.imagePath}` : "https://api.dicebear.com/7.x/initials/svg?seed=Z"}
                                 width="48"
                                 height="48"
                                 className="rounded-circle border-2 border-white shadow-sm"
