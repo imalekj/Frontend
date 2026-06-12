@@ -10,7 +10,7 @@ export const EditPost = () => {
     const baseUrl = import.meta.env.VITE_API_BASE_URL;
     const [isAuthorized, setIsAuthorized] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
-    
+    const { postId } = useParams();
     const [formData, setFormData] = useState({
         title: '',
         category: 'مسابقة',
@@ -34,7 +34,7 @@ export const EditPost = () => {
 
         const fetchPostData = async () => {
             try {
-                const response = await apiFetch(`${baseUrl}api/Posts/${id}`);
+                const response = await apiFetch(`${baseUrl}api/Posts/GetProjectById?id=${postId}`);
                 if (!response.ok) throw new Error("فشل في جلب بيانات المنشور");
                 
                 const data = await response.json();
@@ -65,7 +65,7 @@ export const EditPost = () => {
         };
 
         fetchPostData();
-    }, [navigate, id, baseUrl]);
+    }, [navigate, postId, baseUrl]);
 
     const categories = [
         { id: 'comp', label: 'مسابقة', icon: 'trophy' },
@@ -111,30 +111,42 @@ export const EditPost = () => {
 
             const isProject = formData.category === "مشروع";
 
-            const dataToSend = {
-                id: id,
-                name: formData.title,
-                descriptions: formData.content,
-                rating: "0",
-                isGraduationProject: isProject, 
-                endDate: new Date(formData.deadline).toISOString(),
-                skills: formData.skills,
-                availableSeats: isProject ? formData.maxMembers : (formData.participationType === "فريق" ? formData.maxMembers : 1),
-                projectLocation: formData.faculty, 
-                teamType: isProject ? "فريق" : formData.participationType,
-                numberOfAvailableSeats: formData.maxMembers
-            };
+          
 
             const token = localStorage.getItem("token");
 
-            const response = await apiFetch(`${baseUrl}api/Posts/Update/${id}`, {
-                method: "PUT",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${token}`
-                },
-                body: JSON.stringify(dataToSend)
-            });
+            const user = JSON.parse(localStorage.getItem("user"));
+
+const dataToSend = {
+    projectID: Number(postId),
+    name: formData.title,
+    descriptions: formData.content,
+    rating: "0",
+    isGraduationProject: isProject,
+    endDate: new Date(formData.deadline).toISOString(),
+    skills: formData.skills,
+    availableSeats: isProject
+        ? formData.maxMembers
+        : (formData.participationType === "فريق"
+            ? formData.maxMembers
+            : 1),
+    projectLocation: formData.faculty,
+    teamType: isProject ? "فريق" : formData.participationType,
+    numberOfAvailableSeats: Number(formData.maxMembers),
+    userId: user?.id
+};
+
+const response = await apiFetch(
+    `${baseUrl}api/Posts/UpdatePost`,
+    {
+        method: "PUT",
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify(dataToSend)
+    }
+);
             if (!response.ok) throw new Error("Update request failed");
 
             Swal.fire({
