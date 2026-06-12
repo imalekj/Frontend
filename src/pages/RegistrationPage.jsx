@@ -28,7 +28,6 @@ export const RegistrationPage = () => {
         teamMembers: [] 
     });
 
-    // مراقبة تحديث بيانات المستخدم لضمان ملء الرقم الجامعي تلقائياً في السيرفر فور تحميل الحساب
     useEffect(() => {
         if (user?.studentId) {
             setFormData(prev => ({
