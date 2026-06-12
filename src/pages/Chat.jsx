@@ -1,196 +1,700 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+
 import Swal from 'sweetalert2';
+
 import zujLogo from '../assets/logo.png';
+
 import { useAuth } from '../context/AuthContext';
+
 import { AppColors } from '../theme/AppColors';
+
 import { apiFetch } from '../api';
 
+import { useParams } from 'react-router-dom';
+
 export const Chat = () => {
-    // 1. استقبال الـ ID الممرر من صفحة تفاصيل الفريق (مثال: 1020)
-    const { projectId } = useParams(); 
-    const navigate = useNavigate();
+   
     const scrollRef = useRef(null);
-    
-    const [messages, setMessages] = useState([]);
+
+    const [view, setView] = useState('inbox');
+
+    const [activeChat, setActiveChat] = useState(null);
+
     const [newMessage, setNewMessage] = useState("");
-    const [loading, setLoading] = useState(true);
-    const [teamInfo, setTeamInfo] = useState(null);
-    
+
+    const [loading, setLoading] = useState(false);
+
+    const [specializationUsers, setSpecializationUsers] = useState([]);
+
+    const [loadingUsers, setLoadingUsers] = useState(false);
+
     const baseUrl = import.meta.env.VITE_API_BASE_URL;
-    const { user } = useAuth();
 
-    // 2. جلب أعضاء الفريق والرسائل الخاصة بهذه الغرفة مباشرة عند تحميل الصفحة
+    const { user, token } = useAuth();
+
+    const [messages, setMessages] = useState([]);
+
+    const [contacts, setContacts] = useState([]);
+
+const { id: teamId } = useParams();
+
+    // Fetch team members by project/team ID
     useEffect(() => {
-        const initializeChatRoom = async () => {
-            if (!projectId) return;
-            setLoading(true);
+
+        const fetchTeamMembers = async () => {
+
+            if (!teamId) return;
+
+            setLoadingUsers(true);
+
             try {
-                // أ. جلب بيانات الفريق وأعضائه بناءً على الـ ID الممرر في الرابط
-                const teamResponse = await apiFetch(`${baseUrl}api/Teams/GetAllTeamMembersByProjectId?projectId=${projectId}`);
-                if (teamResponse.ok) {
-                    const teamMembers = await teamResponse.json();
-                    setTeamInfo({
-                        id: projectId,
-                        name: "محادثة الفريق الجماعية",
-                        members: teamMembers
-                    });
+
+                const response = await apiFetch(
+
+                    `${baseUrl}api/Teams/GetAllTeamMembersByProjectId?ProjectId=${teamId}`
+
+                );
+
+                if (!response.ok) {
+
+                    throw new Error('Failed to fetch team members');
+
                 }
 
-                // ب. جلب الرسائل السابقة الخاصة بغرفة المحادثة هذه من الـ DB
-                // ملاحظة: يتم تمرير الـ projectId كـ roomId في دالة الـ GetMessages بالـ Backend لديك
-                const messagesResponse = await apiFetch(`${baseUrl}api/Chat/GetMessages/${projectId}`);
-                if (messagesResponse.ok) {
-                    const messagesData = await messagesResponse.json();
-                    setMessages(messagesData);
-                }
+                const data = await response.json();
+
+                setSpecializationUsers(data);
+
+                const mapped = data.map(u => ({
+
+                    id: u.id,
+
+                    name: u.fullName,
+
+                    type: 'individual',
+
+                    lastMsg: '',
+
+                    unread: 0,
+
+                    imagePath: u.imagePath,
+
+                    online: false
+
+                }));
+
+                setContacts(mapped);
 
             } catch (error) {
-                console.error("Error initializing chat:", error);
-                Swal.fire('خطأ', 'فشل في تحميل محادثة الفريق', 'error');
+
+                console.error('Error fetching team members:', error);
+
+                Swal.fire('خطأ', 'فشل في تحميل قائمة الأعضاء', 'error');
+
             } finally {
-                setLoading(false);
+
+                setLoadingUsers(false);
+
             }
+
         };
 
-        initializeChatRoom();
-    }, [projectId, baseUrl]);
+        fetchTeamMembers();
 
-    // تحجيم وتمرير صندوق المحادثة للأسفل عند وصول رسائل جديدة
+    }, [teamId, baseUrl]);
+
+
+
     useEffect(() => {
-        if (scrollRef.current) {
-            scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+
+        if (activeChat && activeChat.type === 'individual') {
+
+            setLoading(true);
+
+            setTimeout(() => setLoading(false), 500);
+
         }
-    }, [messages]);
 
-    // 3. إرسال الرسالة والربط مع الـ Endpoint: /api/Chat/SendMessage
-    const handleSendMessage = async (e) => {
-        e.preventDefault();
-        if (!newMessage.trim()) return;
+    }, [activeChat]);
 
-        const messageDto = {
-            chatId: projectId, // استخدام الـ id الخاص بالفريق كمعرّف للغرفة المشتركة
-            text: newMessage.trim(),
-            sender: user?.userName || "أنا"
-        };
 
-        try {
-            // إرسال الرسالة إلى الـ Backend بحسب الـ Swagger المرفق لديك
-            const response = await apiFetch(`${baseUrl}api/Chat/SendMessage`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(messageDto)
+
+    useEffect(() => {
+
+        if (scrollRef.current) {
+
+            scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+
+        }
+
+    }, [messages, view]);
+
+
+
+    console.log("teamId:", teamId);
+
+    console.log("users:", specializationUsers);
+
+
+
+    const handleCreateChat = (type) => {
+
+        if (type === 'private') {
+
+            if (loadingUsers) {
+
+                Swal.fire('جاري التحميل...', 'يرجى الانتظار', 'info');
+
+                return;
+
+            }
+
+
+
+            if (specializationUsers.length === 0) {
+
+                Swal.fire('لا يوجد مستخدمون', 'لم يتم العثور على مستخدمين متاحين', 'warning');
+
+                return;
+
+            }
+
+
+
+            const options = specializationUsers.reduce((acc, u) => {
+
+                acc[u.id] = u.fullName;
+
+                return acc;
+
+            }, {});
+
+
+
+            Swal.fire({
+
+                title: 'بدء محادثة خاصة',
+
+                input: 'select',
+
+                inputOptions: options,
+
+                inputPlaceholder: 'اختر مستخدماً',
+
+                showCancelButton: true,
+
+                confirmButtonColor: AppColors.primaryGreen,
+
+                confirmButtonText: 'بدء',
+
+                cancelButtonText: 'إلغاء'
+
+            }).then((result) => {
+
+                if (result.isConfirmed && result.value) {
+
+                    const selectedUser = specializationUsers.find(u => String(u.id) === String(result.value));
+
+                    const newChat = {
+
+                        id: Date.now(),
+
+                        name: selectedUser?.fullName  || result.value,
+
+                        type: 'individual',
+
+                        lastMsg: 'تم إنشاء المحادثة حديثاً',
+
+                        avatar: selectedUser?.imagePath || null,
+
+                        online: false
+
+                    };
+
+                    setContacts(prev => [newChat, ...prev]);
+
+                    setActiveChat(newChat);
+
+                    setView('chat');
+
+                    Swal.fire('تم!', 'تم إنشاء المحادثة بنجاح', 'success');
+
+                }
+
             });
 
-            if (response.ok) {
-                // تحديث الواجهة فوراً بالرسالة الجديدة بعد نجاح الحفظ في السيرفر
-                const savedMsg = {
-                    id: Date.now(),
-                    chatId: projectId,
-                    text: newMessage.trim(),
-                    sender: user?.userName || "أنا",
-                    time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                    isMe: true
-                };
-                setMessages(prev => [...prev, savedMsg]);
-                setNewMessage("");
-            } else {
-                throw new Error("Failed to send message");
-            }
-        } catch (error) {
-            console.error(error);
-            Swal.fire('تنبيه', 'لم يتمكن النظام من إرسال الرسالة حالياً', 'warning');
+            return;
+
         }
+
+
+
+        Swal.fire({
+
+            title: 'إنشاء مجموعة جديدة',
+
+            input: 'text',
+
+            inputPlaceholder: 'اسم المجموعة',
+
+            showCancelButton: true,
+
+            confirmButtonColor: AppColors.primaryGreen,
+
+            confirmButtonText: 'إنشاء',
+
+            cancelButtonText: 'إلغاء'
+
+        }).then((result) => {
+
+            if (result.isConfirmed && result.value) {
+
+                const newChat = {
+
+                    id: Date.now(),
+
+                    name: result.value,
+
+                    type: 'team',
+
+                    lastMsg: 'تم إنشاء المحادثة حديثاً',
+
+                    icon: 'people-fill',
+
+                    leaderId: user?.id || 'me'
+
+                };
+
+                setContacts(prev => [newChat, ...prev]);
+
+                Swal.fire('تم!', 'تم إنشاء المجموعة بنجاح', 'success');
+
+            }
+
+        });
+
     };
 
+
+
+    const handleAdminAction = (action) => {
+
+        const title = action === 'add' ? 'إضافة عضو جديد' : 'طرد عضو من المجموعة';
+
+        Swal.fire({
+
+            title: title,
+
+            input: 'text',
+
+            inputPlaceholder: 'أدخل الرقم الجامعي',
+
+            showCancelButton: true,
+
+            confirmButtonColor: action === 'add' ? AppColors.primaryGreen : AppColors.colorRed,
+
+            confirmButtonText: action === 'add' ? 'إضافة' : 'طرد'
+
+        }).then(res => {
+
+            if (res.isConfirmed) Swal.fire('تمت العملية', 'تم تحديث قائمة الأعضاء', 'success');
+
+        });
+
+    };
+
+
+
+    const handleLeaveGroup = () => {
+
+        Swal.fire({
+
+            title: 'هل أنت متأكد؟',
+
+            text: "ستغادر هذه المجموعة ولن تظهر لك في القائمة",
+
+            icon: 'warning',
+
+            showCancelButton: true,
+
+            confirmButtonColor: AppColors.colorRed,
+
+            confirmButtonText: 'نعم، غادر',
+
+            cancelButtonText: 'تراجع'
+
+        }).then(res => {
+
+            if (res.isConfirmed) {
+
+                setContacts(contacts.filter(c => c.id !== activeChat.id));
+
+                setView('inbox');
+
+            }
+
+        });
+
+    };
+
+
+
+    const handleSendMessage = (e) => {
+
+        e.preventDefault();
+
+        if (!newMessage.trim()) return;
+
+        const msg = {
+
+            id: Date.now(),
+
+            chatId: activeChat.id,
+
+            text: newMessage,
+
+            sender: "أنا",
+
+            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+
+            isMe: true
+
+        };
+
+        setMessages(prev => [...prev, msg]);
+
+        setNewMessage("");
+
+    };
+
+
+
+    const getAvatarSrc = (contact) => {
+
+        if (contact?.imagePath) return `${baseUrl}/${contact.imagePath}`;
+
+        return `https://static.vecteezy.com/system/resources/thumbnails/009/292/244/small/default-avatar-icon-of-social-media-user-vector.jpg`;
+
+    };
+
+
+
     return (
+
         <div className="container py-4 text-end" dir="rtl" style={{ fontFamily: 'Cairo, sans-serif' }}>
+
             <style>
+
                 {`
-                    .chat-container { max-width: 950px; margin: 0 auto; background: ${AppColors.backgroundCard}; border-radius: 20px; overflow: hidden; height: 85vh; display: flex; flex-direction: column; }
+
+                    .list-container { max-width: 950px; margin: 0 auto; background: ${AppColors.backgroundCard}; border-radius: 20px; overflow: hidden; height: 85vh; display: flex; flex-direction: column; }
+
+                    .list-item { padding: 15px 20px; border-bottom: 1px solid ${AppColors.borderRow}; transition: 0.2s; cursor: pointer; display: flex; align-items: center; gap: 15px; }
+
+                    .list-item:hover { background: ${AppColors.backgroundScreenLight}; }
+
                     .chat-box { background: #e5ddd5; background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); flex-grow: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; }
+
                     .bubble { max-width: 75%; padding: 10px 15px; border-radius: 12px; font-size: 0.95rem; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+
                     .bubble-me { background: ${AppColors.primaryGreen}; color: white; align-self: flex-start; border-top-right-radius: 2px; }
+
                     .bubble-other { background: white; color: ${AppColors.textPrimary}; align-self: flex-end; border-top-left-radius: 2px; }
+
+                    .action-btn-circle { width: 40px; height: 40px; border-radius: 50%; border: none; display: flex; align-items: center; justify-content: center; transition: 0.3s; color: white; }
+
+                    .btn-create { background: ${AppColors.primaryGreen}; color: white; border: none; border-radius: 12px; padding: 10px 20px; font-weight: bold; transition: 0.3s; }
+
+                    .btn-create:hover { background: ${AppColors.primaryGreenGradientEnd}; transform: translateY(-2px); }
+
                     .loading-overlay { position: absolute; inset: 0; background: rgba(255,255,255,0.7); display: flex; align-items: center; justify-content: center; z-index: 10; }
+
                 `}
+
             </style>
 
-            <div className="chat-container shadow-lg border position-relative">
+
+
+            <div className="list-container shadow-lg border position-relative">
+
                 {loading && (
+
                     <div className="loading-overlay">
+
                         <div className="spinner-border text-success"></div>
+
                     </div>
+
                 )}
 
-                {/* رأس محادثة الفريق المباشرة */}
-                <div className="p-3 border-bottom bg-white d-flex justify-content-between align-items-center shadow-sm">
-                    {/* عند الضغط على رجوع يعود تلقائياً لصفحة تفاصيل الفريق السابقة */}
-                    <button className="btn border-0 fw-bold" style={{ color: AppColors.primaryGreen }} onClick={() => navigate(-1)}>
-                        <i className="bi bi-chevron-right ms-1"></i> العودة للفريق
-                    </button>
 
-                    <div className="d-flex align-items-center gap-3">
-                        <div className="text-start">
-                            <div className="fw-bold" style={{ color: AppColors.textPrimary }}>
-                                {teamInfo ? `غرفة محادثة الفريق #${projectId}` : "جاري تحميل الغرفة..."}
+
+                {view === 'inbox' && (
+
+                    <>
+
+                        <div className="p-4 border-bottom bg-white d-flex justify-content-between align-items-center shadow-sm">
+
+                            <h5 className="fw-bold mb-0" style={{ color: AppColors.primaryGreen }}>المحادثات الطلابية</h5>
+
+                            <div className="d-flex gap-2">
+
+                                <button className="btn-create shadow-sm small" onClick={() => handleCreateChat('private')} disabled={loadingUsers}>
+
+                                    {loadingUsers
+
+                                        ? <span className="spinner-border spinner-border-sm ms-2"></span>
+
+                                        : <i className="bi bi-person-plus-fill ms-2"></i>
+
+                                    }
+
+                                    محادثة
+
+                                </button>
+
+                                <button className="btn-create shadow-sm small" style={{ backgroundColor: AppColors.accentBlue }} onClick={() => handleCreateChat('group')}>
+
+                                    <i className="bi bi-people-fill ms-2"></i>مجموعة
+
+                                </button>
+
                             </div>
-                            <small className="text-success fw-bold" style={{ fontSize: '0.7rem' }}>
-                                متصل الآن • {teamInfo?.members?.length || 0} أعضاء في الفريق
-                            </small>
-                        </div>
-                        <div className="text-white rounded-circle d-flex align-items-center justify-content-center shadow-sm"
-                            style={{ width: '45px', height: '45px', background: AppColors.primaryGreen }}>
-                            <i className="bi bi-people-fill fs-5"></i>
-                        </div>
-                    </div>
-                    <div></div>
-                </div>
 
-                {/* صندوق عرض الرسائل المتدفقة */}
-                <div ref={scrollRef} className="chat-box">
-                    {messages.length === 0 ? (
-                        <div className="text-center my-auto text-muted opacity-70">
-                            <i className="bi bi-chat-quote fs-1 d-block mb-2"></i>
-                            لا توجد رسائل سابقة في هذه المجموعة. ابدأ النقاش مع زملائك الآن!
                         </div>
-                    ) : (
-                        messages.map(msg => {
-                            // التحقق إن كانت الرسالة مرسلة من المستخدم الحالي أم عضو آخر بالفريق
-                            const isMe = msg.sender === user?.userName || msg.isMe;
-                            return (
-                                <div key={msg.id} className={`d-flex flex-column ${isMe ? 'align-items-start' : 'align-items-end'}`}>
-                                    <div className={`bubble ${isMe ? 'bubble-me' : 'bubble-other'}`}>
-                                        {!isMe && (
-                                            <div className="fw-bold mb-1" style={{ fontSize: '0.7rem', opacity: 0.8 }}>{msg.sender}</div>
+
+
+
+                        <div className="overflow-auto flex-grow-1">
+
+                            {contacts.map(item => (
+
+                                <div key={item.id} className="list-item" onClick={() => { setActiveChat(item); setView('chat'); }}>
+
+                                    <div className="position-relative">
+
+                                        {item.type === 'individual' ? (
+
+                                            <img
+
+                                                src={getAvatarSrc(item)}
+
+                                                className="rounded-circle border"
+
+                                                width="55" height="55"
+
+                                                alt={item.name}
+
+                                                onError={(e) => { e.target.src = `https://static.vecteezy.com/system/resources/thumbnails/009/292/244/small/default-avatar-icon-of-social-media-user-vector.jpg`; }}
+
+                                            />
+
+                                        ) : (
+
+                                            <div className="text-white rounded-circle d-flex align-items-center justify-content-center shadow-sm"
+
+                                                style={{ width: '55px', height: '55px', background: AppColors.primaryGreen }}>
+
+                                                <i className={`bi bi-${item.icon} fs-4`}></i>
+
+                                            </div>
+
                                         )}
-                                        <div>{msg.text}</div>
-                                        <small className={`d-block mt-1 ${isMe ? 'text-white-50' : 'text-muted'}`} style={{ fontSize: '0.65rem' }}>
-                                            {msg.time || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                        </small>
-                                    </div>
-                                </div>
-                            );
-                        })
-                    )}
-                </div>
 
-                {/* نموذج كتابة وإرسال الرسائل لقاعدة البيانات */}
-                <div className="p-4 bg-light border-top">
-                    <form onSubmit={handleSendMessage} className="d-flex gap-3">
-                        <button type="submit" className="btn text-white rounded-circle shadow" style={{ background: AppColors.primaryGreen, width: '50px', height: '50px' }}>
-                            <i className="bi bi-send-fill"></i>
-                        </button>
-                        <input
-                            type="text"
-                            className="form-control rounded-pill border-0 px-4 text-end shadow-sm"
-                            placeholder="اكتب رسالة لأعضاء فريقك المشترك..."
-                            value={newMessage}
-                            onChange={(e) => setNewMessage(e.target.value)}
-                        />
-                    </form>
-                </div>
+                                        {item.online && (
+
+                                            <span className="position-absolute bottom-0 end-0 rounded-circle border-2 border-white"
+
+                                                style={{ width: '15px', height: '15px', background: AppColors.lightGreenTextDark }}></span>
+
+                                        )}
+
+                                    </div>
+
+                                    <div className="flex-grow-1">
+
+                                        <div className="d-flex justify-content-between align-items-center mb-1">
+
+                                            <span className="fw-bold" style={{ color: AppColors.textPrimary }}>{item.name}</span>
+
+                                            <small className="text-muted" style={{ fontSize: '0.75rem' }}>12:40 PM</small>
+
+                                        </div>
+
+                                        <div className="d-flex justify-content-between">
+
+                                            <p className="mb-0 text-muted small text-truncate" style={{ maxWidth: '250px' }}>{item.lastMsg || 'لا توجد رسائل'}</p>
+
+                                            {item.unread > 0 && <span className="badge rounded-pill bg-danger">{item.unread}</span>}
+
+                                        </div>
+
+                                    </div>
+
+                                </div>
+
+                            ))}
+
+                        </div>
+
+                    </>
+
+                )}
+
+
+
+                {view === 'chat' && activeChat && (
+
+                    <>
+
+                        <div className="p-3 border-bottom bg-white d-flex justify-content-between align-items-center shadow-sm">
+
+                            <button className="btn border-0 fw-bold" style={{ color: AppColors.primaryGreen }} onClick={() => setView('inbox')}>
+
+                                <i className="bi bi-chevron-right ms-1"></i> رجوع
+
+                            </button>
+
+
+
+                            <div className="d-flex align-items-center gap-3">
+
+                                <div className="text-start">
+
+                                    <div className="fw-bold" style={{ color: AppColors.textPrimary }}>{activeChat.name}</div>
+
+                                    <small className="text-success fw-bold" style={{ fontSize: '0.7rem' }}>
+
+                                        {activeChat.type === 'team' ? 'مجموعة عمل' : 'نشط الآن'}
+
+                                    </small>
+
+                                </div>
+
+                                <img
+
+                                    src={activeChat.type === 'individual' ? getAvatarSrc(activeChat) : zujLogo}
+
+                                    className="rounded-circle border"
+
+                                    width="45" height="45"
+
+                                    alt={activeChat.name}
+
+                                    onError={(e) => { e.target.src = zujLogo; }}
+
+                                />
+
+                            </div>
+
+
+
+                            <div className="d-flex gap-2">
+
+                                {activeChat.type === 'team' && (
+
+                                    <>
+
+                                        {activeChat.leaderId === (user?.id || 'me') && (
+
+                                            <>
+
+                                                <button title="إضافة طالب" className="action-btn-circle" style={{ background: AppColors.primaryGreen }} onClick={() => handleAdminAction('add')}>
+
+                                                    <i className="bi bi-person-plus-fill"></i>
+
+                                                </button>
+
+                                                <button title="طرد عضو" className="action-btn-circle" style={{ background: AppColors.colorRed }} onClick={() => handleAdminAction('kick')}>
+
+                                                    <i className="bi bi-person-x-fill"></i>
+
+                                                </button>
+
+                                            </>
+
+                                        )}
+
+                                        <button title="مغادرة" className="action-btn-circle" style={{ background: '#6c757d' }} onClick={handleLeaveGroup}>
+
+                                            <i className="bi bi-box-arrow-right"></i>
+
+                                        </button>
+
+                                    </>
+
+                                )}
+
+                            </div>
+
+                        </div>
+
+
+
+                        <div ref={scrollRef} className="chat-box">
+
+                            {messages.filter(m => m.chatId === activeChat.id).map(msg => (
+
+                                <div key={msg.id} className={`d-flex flex-column ${msg.isMe ? 'align-items-start' : 'align-items-end'}`}>
+
+                                    <div className={`bubble ${msg.isMe ? 'bubble-me' : 'bubble-other'}`}>
+
+                                        {!msg.isMe && activeChat.type === 'team' && (
+
+                                            <div className="fw-bold mb-1" style={{ fontSize: '0.7rem', opacity: 0.8 }}>{msg.sender}</div>
+
+                                        )}
+
+                                        <div>{msg.text}</div>
+
+                                        <small className={`d-block mt-1 ${msg.isMe ? 'text-white-50' : 'text-muted'}`} style={{ fontSize: '0.65rem' }}>{msg.time}</small>
+
+                                    </div>
+
+                                </div>
+
+                            ))}
+
+                        </div>
+
+
+
+                        <div className="p-4 bg-light border-top">
+
+                            <form onSubmit={handleSendMessage} className="d-flex gap-3">
+
+                                <button type="submit" className="btn text-white rounded-circle shadow" style={{ background: AppColors.primaryGreen, width: '50px', height: '50px' }}>
+
+                                    <i className="bi bi-send-fill"></i>
+
+                                </button>
+
+                                <input
+
+                                    type="text"
+
+                                    className="form-control rounded-pill border-0 px-4 text-end shadow-sm"
+
+                                    placeholder="اكتب رسالتك هنا للمشاركة..."
+
+                                    value={newMessage}
+
+                                    onChange={(e) => setNewMessage(e.target.value)}
+
+                                />
+
+                            </form>
+
+                        </div>
+
+                    </>
+
+                )}
+
             </div>
+
         </div>
+
     );
+
 };
