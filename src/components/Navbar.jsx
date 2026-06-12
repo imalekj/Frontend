@@ -157,7 +157,6 @@ const imageUrl = `${baseUrl}${userInfo?.imagePath}`;
                         {isLoggedIn && (
                             <>
                                 <li className="nav-item"><NavLink className="nav-link px-3" to="/my-teams">فرقي</NavLink></li>
-                                <li className="nav-item"><NavLink className="nav-link px-3" to="/Chat">الدردشة</NavLink></li>
                             </>
                         )}
                     </ul>

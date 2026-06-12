@@ -16,6 +16,10 @@ export const TeamDetails = () => {
     const [count, setCount] = useState(0);
     const { user, token } = useAuth();
 
+    // حالات جديدة لإدارة تعديل مستودع الكود (GitHub)
+    const [isEditingRepo, setIsEditingRepo] = useState(false);
+    const [githubUrl, setGithubUrl] = useState(state?.githubUrl || state?.GithubUrl || "");
+
     useEffect(() => {
         const fetchMembers = async () => {
             try {
@@ -58,15 +62,48 @@ export const TeamDetails = () => {
     }, [teamId, baseUrl, token]);
 
     const safeMembers = Array.isArray(members) ? members : [];
+    
+    // التحقق من صلاحية المستخدم الحالي (هل هو قائد الفريق / Manger)
     const isCurrentUserOwner = safeMembers.find(m => m.id === user?.id)?.role === "Manger";
 
     const getDefaultAvatar = (seed) => `https://api.dicebear.com/7.x/identicon/svg?seed=${seed}`;
+
+    // دالة إرسال الرابط المعدل إلى السيرفر بناءً على الـ Swagger المتاح لديك
+    const handleUpdateRepoUrl = async () => {
+        try {
+            const response = await apiFetch(`${baseUrl}api/Posts/UpdatePost`, {
+                method: 'PUT',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    "Authorization": `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    id: state?.projectId || teamId,
+                    githubUrl: githubUrl.trim(),
+                    // تمرير البيانات المتبقية التي قد يتطلبها الـ DTO لمنع حدوث Validation Error
+                    title: state?.name || state?.Name || "",
+                    description: state?.description || state?.Description || "",
+                    projectType: state?.projectType || state?.ProjectType || ""
+                })
+            });
+
+            if (response.ok) {
+                setIsEditingRepo(false);
+                Swal.fire('تم!', 'تم تحديث رابط مستودع الكود بنجاح', 'success');
+            } else {
+                throw new Error("Failed to update repository URL");
+            }
+        } catch (error) {
+            console.error(error);
+            Swal.fire('خطأ', 'فشل في حفظ الرابط في السيرفر', 'error');
+        }
+    };
 
     const handleLeaveTeam = () => {
         if (isCurrentUserOwner) {
             return Swal.fire(
                 'تنبيه',
-                'لا يمكن لقائد الفريق المغادرة قبل تعيين قائد جديد أو حذف الفريق.',
+                'لا يمكن لقائد الفريق المغادرة.',
                 'info'
             );
         }
@@ -184,17 +221,51 @@ export const TeamDetails = () => {
                 </div>
 
                 <div className="col-lg-4">
+                    {/* بطاقة الروابط السريعة المحدثة بخاصية التعديل للقائد */}
                     <div className="card detail-card shadow-sm p-4 bg-white mb-4 border-0">
-                        <h5 className="fw-bold mb-4">روابط سريعة</h5>
-                        <a href={state?.githubUrl || "#"} target="_blank" rel="noreferrer" className="link-box mb-3 border">
-                            <div className="d-flex align-items-center">
-                                <i className="bi bi-github fs-3 me-3"></i>
-                                <div>
-                                    <div className="fw-bold">مستودع الكود (GitHub)</div>
-                                    <small className="text-muted">مشاهدة الكود المصدري</small>
-                                </div>
+                        <div className="d-flex justify-content-between align-items-center mb-4">
+                            {isCurrentUserOwner && (
+                                <button 
+                                    className="btn btn-sm btn-outline-secondary py-1 px-2 rounded-3"
+                                    onClick={() => setIsEditingRepo(!isEditingRepo)}
+                                >
+                                    {isEditingRepo ? 'إلغاء' : <><i className="bi bi-pencil-square ms-1"></i> تعديل</>}
+                                </button>
+                            )}
+                            <h5 className="fw-bold mb-0">روابط سريعة</h5>
+                        </div>
+
+                        {isEditingRepo ? (
+                            <div className="mt-2">
+                                <input 
+                                    type="url" 
+                                    className="form-control text-start mb-2 rounded-3" 
+                                    dir="ltr"
+                                    placeholder="https://github.com/..."
+                                    value={githubUrl}
+                                    onChange={(e) => setGithubUrl(e.target.value)}
+                                />
+                                <button 
+                                    className="btn btn-sm text-white w-100 py-2 rounded-3" 
+                                    style={{ background: AppColors.primaryGreen || '#1a5d44' }}
+                                    onClick={handleUpdateRepoUrl}
+                                >
+                                    <i className="bi bi-check-lg ms-1"></i> حفظ الرابط الجديد
+                                </button>
                             </div>
-                        </a>
+                        ) : (
+                            <a href={githubUrl || "#"} target="_blank" rel="noreferrer" className="link-box mb-3 border">
+                                <div className="d-flex align-items-center">
+                                    <i className="bi bi-github fs-3 me-3"></i>
+                                    <div>
+                                        <div className="fw-bold">مستودع الكود (GitHub)</div>
+                                        <small className="text-muted">
+                                            {githubUrl ? 'مشاهدة الكود المصدري' : 'لم يتم تحديد رابط بعد'}
+                                        </small>
+                                    </div>
+                                </div>
+                            </a>
+                        )}
                     </div>
 
                     <div className="card detail-card shadow-sm p-4 bg-white border-0">
@@ -209,18 +280,18 @@ export const TeamDetails = () => {
                         </button>
 
                         <button
+                            className="btn btn-outline-success w-100 py-3 fw-bold btn-action mt-2"
+                            onClick={() => navigate(`/chat/${teamId}`)}
+                        >
+                            <i className="bi bi-chat-dots me-2"></i> محادثة
+                        </button>
+                        <hr className="my-1 opacity-0" />
+                        <button
                             className="btn btn-outline-danger w-100 py-3 fw-bold btn-action"
                             onClick={handleLeaveTeam}
                         >
                             <i className="bi bi-box-arrow-right me-2"></i> مغادرة الفريق
                         </button>
-                        
-                      <button
-                        className="btn btn-outline-success w-100 py-3 fw-bold btn-action mt-2"
-                        onClick={() => navigate(`/chat/${teamId}`)}
-                        >
-                        <i className="bi bi-chat-dots me-2"></i> محادثة
-                       </button>
 
                         <hr className="my-4 opacity-25" />
                         <div className="text-center">

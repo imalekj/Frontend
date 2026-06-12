@@ -3,6 +3,8 @@ import { useAuth } from '../context/AuthContext';
 import React, { useState, useEffect } from 'react';
 import { apiFetch } from '../api';
 import { AppColors } from '../theme/AppColors'; 
+import { toast } from 'react-hot-toast';
+import Swal from 'sweetalert2'; // استيراد الـ SweetAlert
 
 export const CompetitionDetails = () => {
     const { id } = useParams();
@@ -77,6 +79,41 @@ export const CompetitionDetails = () => {
 
     const handleManageRequests = () => navigate(`/manage-requests/${competition.projectID}`);
     
+    const handleEditPost = () => navigate(`/edit-post/${competition.projectID}`);
+
+    // الدالة المحدثة باستخدام SweetAlert
+    const handleDeletePost = () => {
+        Swal.fire({
+            title: 'هل أنت متأكد؟',
+            text: "هل أنت متأكد من رغبتك في حذف هذا المنشور نهائياً؟ لا يمكن التراجع عن هذا الإجراء.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545', // اللون الأحمر للحذف
+            cancelButtonColor: '#6c757d',  // اللون الرمادي للإلغاء
+            confirmButtonText: 'نعم، احذفه',
+            cancelButtonText: 'إلغاء',
+            reverseButtons: true // لترتيب الأزرار بشكل صحيح في الواجهات العربية
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                try {
+                    const response = await apiFetch(`${baseUrl}api/ProjectPost/${competition.projectID}`, {
+                        method: 'DELETE'
+                    });
+
+                    if (response.ok) {
+                        toast.success("تم حذف المنشور بنجاح");
+                        navigate('/');
+                    } else {
+                        toast.error("فشل في حذف المنشور، يرجى المحاولة لاحقاً");
+                    }
+                } catch (error) {
+                    console.error("Delete error:", error);
+                    toast.error("حدث خطأ في الاتصال أثناء محاولة الحذف");
+                }
+            }
+        });
+    };
+
     const handlePublisherProfileClick = () => {
         if (user2?.id) {
             navigate(`/profile/${user2.id}`);
@@ -139,7 +176,6 @@ export const CompetitionDetails = () => {
                 `}
             </style>
 
-            {/* الصورة العلوية للإعلان كغلاف احترافي */}
             <div className="comp-header-wrapper">
                 <img
                     src={competition.coverImage || "https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=1200&q=80"}
@@ -149,7 +185,6 @@ export const CompetitionDetails = () => {
             </div>
 
             <div className="row g-4">
-                {/* الجزء الأيمن: محتوى المنشور والتفاصيل الفنية */}
                 <div className="col-lg-8">
                     <div className="mb-4">
                         <span className={`badge custom-badge ${isProject ? 'bg-light text-primary border border-primary-subtle' : 'bg-light text-success border border-success-subtle'} mb-3`}>
@@ -202,7 +237,6 @@ export const CompetitionDetails = () => {
 
                     <hr className="my-5 opacity-25" />
 
-                    {/* قسم التعليقات المحسّن بالكامل */}
                     <div className="mt-4">
                         <h5 className="section-title fs-6">استفسارات وتواصل اجتماعي ({comments.length})</h5>
                         
@@ -237,7 +271,7 @@ export const CompetitionDetails = () => {
                                             <img src={comment.avatar} width="32" height="32" className="rounded-circle border" alt="avatar" />
                                             <span className="fw-bold text-dark small">{comment.name}</span>
                                         </div>
-                                        <small className="text-muted" style={{fontSize: '0.7rem'}}><i className="bi bi-clock me-1"></i> {comment.date}</small>
+                                        <small className="text-muted" style={{fontSize: '0.7rem silent'}}><i className="bi bi-clock me-1"></i> {comment.date}</small>
                                     </div>
                                     <p className="mb-0 small text-secondary" style={{marginRight: '40px', lineHeight: '1.6'}}>{comment.text}</p>
                                 </div>
@@ -246,7 +280,6 @@ export const CompetitionDetails = () => {
                     </div>
                 </div>
 
-                {/* الجزء الأيسر: كرت لوحة التحكم والتفاصيل الذكية (Sidebar) */}
                 <div className="col-lg-4">
                     <div className="info-card shadow-lg sticky-top" style={{ top: '30px' }}>
                         <h6 className="fw-extrabold mb-4 border-bottom pb-2 text-dark fs-6">
@@ -261,7 +294,6 @@ export const CompetitionDetails = () => {
                             <span className="fw-bold small text-dark">{formatDate(competition.endDate)}</span>
                         </div>
                         
-                        {/* إخفاء الجائزة في حال كان المنشور يمثل مشروعاً */}
                         {!isProject && (
                             <div className="stat-row">
                                 <span className="text-muted small"><i className="bi bi-trophy text-muted me-1"></i> الحافز والجائزة</span>
@@ -269,7 +301,6 @@ export const CompetitionDetails = () => {
                             </div>
                         )}
 
-                        {/* مؤشر مرئي ديناميكي للوقت المتبقي */}
                         <div className="mt-4 p-3 rounded-3" style={{ background: '#fafafa', border: '1px solid #f0f0f0' }}>
                             <div className="d-flex justify-content-between mb-1">
                                 <span className="text-muted extra-small" style={{fontSize:'0.75rem'}}>حالة التقديم والموعد:</span>
@@ -288,9 +319,24 @@ export const CompetitionDetails = () => {
 
                         <div className="mt-4">
                             {isOwner ? (
-                                <button className="btn-action bg-warning text-dark border-0 w-100 fw-bold" onClick={handleManageRequests}>
-                                    <i className="bi bi-sliders me-1"></i> إدارة الطلبات الواردة للمنشور
-                                </button>
+                                <div className="d-flex flex-column gap-2">
+                                    <button className="btn-action bg-warning text-dark border-0 w-100 fw-bold" onClick={handleManageRequests}>
+                                        <i className="bi bi-sliders me-1"></i> إدارة الطلبات الواردة للمنشور
+                                    </button>
+                                    
+                                    <div className="row g-2">
+                                        <div className="col-6">
+                                            <button className="btn btn-outline-primary w-100 fw-bold py-2 rounded-3 small" onClick={handleEditPost}>
+                                                <i className="bi bi-pencil-square me-1"></i> تعديل
+                                            </button>
+                                        </div>
+                                        <div className="col-6">
+                                            <button className="btn btn-outline-danger w-100 fw-bold py-2 rounded-3 small" onClick={handleDeletePost}>
+                                                <i className="bi bi-trash3-fill me-1"></i> حذف
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
                             ) : (
                                 <button 
                                     className={`btn-action w-100 fw-bold ${!isLoggedIn ? 'bg-secondary' : ''}`} 

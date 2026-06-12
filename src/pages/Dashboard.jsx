@@ -62,9 +62,20 @@ export const Dashboard = () => {
                         "Accept": "*/*"
                     }
                 });
+                
                 if (res.ok) {
                     const data = await res.json();
-                    setMyTeams(Array.isArray(data) ? data : []);
+                    const teamsArray = Array.isArray(data) ? data : [];
+                    
+                    const formattedTeams = teamsArray.map(team => ({
+                        id: team.teamID || team.id,
+                        name: team.teamName || team.name,
+                        projectName: team.projectName || "قيد المراجعة"
+                    }));
+                    
+                    setMyTeams(formattedTeams);
+                } else {
+                    setMyTeams([]);
                 }
             } catch (err) {
                 console.error("Error fetching my teams:", err);
@@ -172,13 +183,6 @@ export const Dashboard = () => {
                         font-size: 0.8rem;
                         padding: 5px 12px;
                         border-radius: 8px;
-                    }
-                    .btn-publish {
-                        background-color: ${AppColors.primaryGreen} !important;
-                        color: white !important;
-                        width: 55px; height: 55px; border-radius: 16px;
-                        transition: 0.3s ease;
-                        box-shadow: 0 5px 20px rgba(26,93,68,0.3) !important;
                     }
                     .swal2-popup { font-family: 'Cairo', sans-serif !important; border-radius: 20px !important; }
                 `}
@@ -301,15 +305,15 @@ export const Dashboard = () => {
                         ) : (
                             <div className="row g-3">
                                 {myTeams.map(team => (
-                                    <div key={team.teamID || team.id} className="col-md-6 col-lg-4">
+                                    <div key={team.id} className="col-md-6 col-lg-4">
                                         <div className="p-3 bg-white border rounded-4 d-flex align-items-center justify-content-between shadow-sm">
                                             <div className="d-flex align-items-center gap-3">
                                                 <div className="bg-success bg-opacity-10 rounded-3 p-2.5 text-success">
                                                     <i className="bi bi-shield-check fs-4"></i>
                                                 </div>
                                                 <div>
-                                                    <h6 className="fw-bold mb-1 text-dark">{team.teamName || team.name}</h6>
-                                                    <small className="text-muted d-block">مشروع: {team.projectName || "قيد المراجعة"}</small>
+                                                    <h6 className="fw-bold mb-1 text-dark">{team.name}</h6>
+                                                    <small className="text-muted d-block">مشروع: {team.projectName}</small>
                                                 </div>
                                             </div>
                                             <button className="btn btn-sm btn-light border rounded-3 fw-bold px-3" onClick={() => navigate('/my-teams')}>
@@ -323,8 +327,6 @@ export const Dashboard = () => {
                     </div>
                 )}
             </div>
-
-        
         </div>
     );
 };

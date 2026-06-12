@@ -2,7 +2,7 @@ import { useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { apiFetch } from '../api';
-import { AppColors } from '../theme/AppColors'; // استيراد ملف الألوان الخاص بك
+import { AppColors } from '../theme/AppColors';
 
 export const CompetitionsPage = () => {
     const [mainTab, setMainTab] = useState('الكل');
@@ -38,29 +38,31 @@ export const CompetitionsPage = () => {
             .catch(err => console.log(err));
     }, [baseUrl]);
 
-    const filteredResults = allData.filter(item => {
-        const matchesTab =
-            mainTab === 'الكل' ||
-            (mainTab === 'مشروع' && item.isGraduationProject) ||
-            (mainTab === 'مسابقة' && !item.isGraduationProject);
+    const filteredResults = allData
+        .filter(item => {
+            const matchesTab =
+                mainTab === 'الكل' ||
+                (mainTab === 'مشروع' && item.isGraduationProject) ||
+                (mainTab === 'مسابقة' && !item.isGraduationProject);
 
-        const matchesFaculty =
-            facultyFilter === 'الكل' ||
-            (item.projectLocation ?? "").trim().toLowerCase() === facultyFilter.trim().toLowerCase();
+            const matchesFaculty =
+                facultyFilter === 'الكل' ||
+                (item.projectLocation ?? "").trim().toLowerCase() === facultyFilter.trim().toLowerCase();
 
-        const matchesSearch = (item.name ?? "")
-            .toLowerCase()
-            .includes(searchTerm.toLowerCase()) ||
-            (item.skills ?? "")
+            const matchesSearch = (item.name ?? "")
                 .toLowerCase()
-                .includes(searchTerm.toLowerCase());
+                .includes(searchTerm.toLowerCase()) ||
+                (item.skills ?? "")
+                    .toLowerCase()
+                    .includes(searchTerm.toLowerCase());
 
-        return matchesTab && matchesFaculty && matchesSearch;
-    });
+            return matchesTab && matchesFaculty && matchesSearch;
+        })
+        .sort((a, b) => b.projectID - a.projectID);
 
     const handleCreatePost = () => {
-    navigate('/create-post');
-};
+        navigate('/create-post');
+    };
 
     return (
         <div className="container py-5 text-end" dir="rtl" style={{ fontFamily: 'Cairo, sans-serif', maxWidth: '1200px', backgroundColor: AppColors.backgroundCard }}>

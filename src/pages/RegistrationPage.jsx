@@ -28,6 +28,16 @@ export const RegistrationPage = () => {
         teamMembers: [] 
     });
 
+    // مراقبة تحديث بيانات المستخدم لضمان ملء الرقم الجامعي تلقائياً في السيرفر فور تحميل الحساب
+    useEffect(() => {
+        if (user?.studentId) {
+            setFormData(prev => ({
+                ...prev,
+                studentId: user.studentId
+            }));
+        }
+    }, [user]);
+
     useEffect(() => {
         if (!isLoggedIn) {
             toast.error('يجب تسجيل الدخول أولاً');
@@ -65,7 +75,7 @@ export const RegistrationPage = () => {
                 console.error("Error fetching post details:", err);
                 toast.error("حدث خطأ أثناء جلب تفاصيل الشواغر والمقاعد");
             } finally {
-                setLoadingDetails(false);
+                LoadingDetails(false);
             }
         };
 
@@ -98,7 +108,7 @@ export const RegistrationPage = () => {
 
         let confirmationHtml = '';
         if (isProject) {
-            confirmationHtml = `أنت على وشك إرسال طلب انضمام <b>فردي</b> لفريق عمل هذا المشروع.`;
+            confirmationHtml = `أنت على وشك إرسال طلب انضمام <b>فردي</b> برقمك الجامعي الموثق لفريق عمل هذا المشروع.`;
         } else {
             confirmationHtml = `أنت على وشك التسجيل في المسابقة كـ <b>${regType === 'individual' ? 'مشارك فردي' : `فريق باسم (${formData.teamName}) ويضم ${activeMembers.length + 1} أعضاء`}</b>`;
         }
@@ -185,6 +195,7 @@ export const RegistrationPage = () => {
                     .type-card.active { border-color: ${mainGreen}; background-color: #f0f7f4; transform: translateY(-5px); }
                     .custom-input { background: #f8fafc; border: 1px solid #edf2f7; border-radius: 12px; padding: 12px; }
                     .custom-input:focus { border-color: ${mainGreen}; box-shadow: 0 0 0 3px rgba(26, 93, 68, 0.1); outline: none; }
+                    .custom-input:disabled { background-color: #f1f5f9; color: #64748b; cursor: not-allowed; border-color: #e2e8f0; }
                     .btn-main { background: ${mainGreen}; color: white; border-radius: 12px; padding: 14px; border: none; font-weight: bold; width: 100%; transition: 0.3s; }
                     .btn-main:hover { filter: brightness(1.1); transform: translateY(-2px); }
                     .swal2-html-container { font-family: 'Cairo', sans-serif !important; }
@@ -248,17 +259,22 @@ export const RegistrationPage = () => {
                                 </div>
                             ) : (
                                 <form onSubmit={handleSubmit} className="animate__animated animate__fadeIn">
+                                    
+                                    {/* حقل الرقم الجامعي المطور (يتحول للقراءة فقط في حال كان مشروع تخرج) */}
                                     <div className="mb-4">
                                         <label className="form-label small fw-bold">الرقم الجامعي للمتقدم</label>
                                         <input 
                                             type="text" 
                                             className="form-control custom-input text-end" 
                                             value={formData.studentId}
-                                            placeholder="مثلاً: 202110455" 
+                                            placeholder={isProject ? "جاري سحب الرقم الجامعي..." : "مثلاً: 202110455"} 
                                             required
+                                            disabled={isProject}
                                             onChange={(e) => setFormData({...formData, studentId: e.target.value})} 
                                         />
-                                        <div className="form-text x-small text-muted">سيتم ربط الطلب بملفك الأكاديمي الحالي: {user?.email}</div>
+                                        <div className="form-text x-small text-muted">
+                                            {isProject ? "🔒 تم قفل وتأكيد الحقل بناءً على الحساب الأكاديمي النشط حالياً." : `سيتم ربط الطلب بملفك الأكاديمي الحالي: ${user?.email}`}
+                                        </div>
                                     </div>
 
                                     {!isProject && regType === 'team' && (

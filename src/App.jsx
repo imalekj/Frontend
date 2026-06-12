@@ -18,6 +18,7 @@ import { CompetitionDetails } from './pages/CompetitionDetails';
 import { RegistrationPage } from './pages/RegistrationPage';
 import { RequestsPage } from './pages/RequestsPage';
 import { CreatePost } from './pages/CreatePost';
+import EditPost from './pages/EditPost';
 import { Chat } from './pages/Chat';
 import { Profile } from './pages/Profile';
 import { UserProfile } from './pages/UserProfile';
@@ -64,6 +65,10 @@ function App() {
                 <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
                 <Route path="/edit-profile" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
                 <Route path="/create-post" element={<CreatePost />} />
+                
+                {/* تم إضافة مسار صفحة تعديل المنشور وحمايته هنا */}
+                <Route path="/edit-post/:postId" element={<ProtectedRoute><EditPost /></ProtectedRoute>} />
+                
                 <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
                 <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
                 <Route path="/chat/:id" element={<ProtectedRoute><Chat /></ProtectedRoute>} />

@@ -7,7 +7,7 @@ import { AppColors } from '../theme/AppColors';
 
 export const EditProfile = () => {
     const navigate = useNavigate();
-    const { user, login } = useAuth();
+    const { user } = useAuth();
     const userId = user?.id;
     const [selectedFile, setSelectedFile] = useState(null);
     const mainGreen = AppColors.primaryGreen || '#1a5d44';
@@ -59,74 +59,81 @@ export const EditProfile = () => {
         fetchUserInfo();
     }, [userId, baseUrl]);
 
-const handleImageChange = (e) => {
-    const file = e.target.files[0];
-
-    if (file) {
-        setSelectedFile(file);
-        setImagePreview(URL.createObjectURL(file));
-    }
-};
-const handleSave = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-
-    Swal.fire({
-        title: 'جاري الحفظ...',
-        allowOutsideClick: false,
-        didOpen: () => { Swal.showLoading(); }
-    });
-
-    try {
-        const data = new FormData();
-
-        data.append("id", userId);
-        data.append("fullName", formData.fullName);
-        data.append("url", formData.url || "");
-        data.append("skills", formData.skills || "");
-        data.append("bio", formData.bio || "");
-
-        data.append("email", user.email || "");
-        data.append("userName", user.userName || "");
-        data.append("phoneNumber", user.phoneNumber || "");
-        data.append("role", user.role || "");
-        data.append("participationID", "0");
-
-        if (selectedFile) {
-            data.append("ProfileImage", selectedFile);
+    const handleImageChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            setSelectedFile(file);
+            setImagePreview(URL.createObjectURL(file));
         }
+    };
 
-        const res = await apiFetch(`${baseUrl}api/Login/UpdateUser`, {
-            method: 'PUT',
-            body: data
-        });
+    const getLinkIcon = (url) => {
+        if (!url) return "bi-link-45deg";
+        const lowerUrl = url.toLowerCase();
+        if (lowerUrl.includes("github.com")) return "bi-github text-dark";
+        if (lowerUrl.includes("linkedin.com")) return "bi-linkedin text-primary";
+        if (lowerUrl.includes("instagram.com")) return "bi-instagram text-danger";
+        if (lowerUrl.includes("youtube.com") || lowerUrl.includes("youtu.be")) return "bi-youtube text-danger";
+        return "bi-globe text-secondary";
+    };
 
-        if (!res.ok) throw new Error("فشل في تحديث البيانات");
+    const handleSave = async (e) => {
+        e.preventDefault();
+        setLoading(true);
 
-        // ✅ success UI
         Swal.fire({
-            icon: 'success',
-            title: 'تم الحفظ بنجاح',
-            timer: 1500,
-            showConfirmButton: false
+            title: 'جاري الحفظ...',
+            allowOutsideClick: false,
+            didOpen: () => { Swal.showLoading(); }
         });
 
-        navigate('/profile');
+        try {
+            const data = new FormData();
 
-    } catch (err) {
-        console.error(err);
+            data.append("id", userId);
+            data.append("fullName", formData.fullName);
+            data.append("url", formData.url || "");
+            data.append("skills", formData.skills || "");
+            data.append("bio", formData.bio || "");
 
-        // ❌ error UI
-        Swal.fire({
-            icon: 'error',
-            title: 'حدث خطأ أثناء الحفظ'
-        });
+            data.append("email", user.email || "");
+            data.append("userName", user.userName || "");
+            data.append("phoneNumber", user.phoneNumber || "");
+            data.append("role", user.role || "");
+            data.append("participationID", "0");
 
-    } finally {
-        setLoading(false);
-        Swal.close(); // 🔥 THIS FIXES INFINITE LOADING
-    }
-};
+            if (selectedFile) {
+                data.append("ProfileImage", selectedFile);
+            }
+
+            const res = await apiFetch(`${baseUrl}api/Login/UpdateUser`, {
+                method: 'PUT',
+                body: data
+            });
+
+            if (!res.ok) throw new Error("فشل في تحديث البيانات");
+
+            Swal.fire({
+                icon: 'success',
+                title: 'تم الحفظ بنجاح',
+                timer: 1500,
+                showConfirmButton: false
+            });
+
+            navigate('/profile');
+
+        } catch (err) {
+            console.error(err);
+            Swal.fire({
+                icon: 'error',
+                title: 'حدث خطأ أثناء الحفظ'
+            });
+        } finally {
+            setLoading(false);
+            Swal.close();
+        }
+    };
+
     return (
         <div className="container py-5 text-end" dir="rtl" style={{ fontFamily: 'Cairo, sans-serif' }}>
             <style>
@@ -140,6 +147,18 @@ const handleSave = async (e) => {
                         position: absolute; bottom: -5px; left: -5px; 
                         background: ${mainGreen}; color: white; width: 35px; height: 35px; 
                         border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer;
+                    }
+                    .input-group-text {
+                        border-radius: 0 12px 12px 0;
+                        background-color: #f1f5f9;
+                        border: 1px solid #e2e8f0;
+                        border-left: none;
+                        font-size: 1.25rem;
+                        transition: 0.3s;
+                    }
+                    .custom-url-input {
+                        border-radius: 12px 0 0 12px !important;
+                        border-right: none;
                     }
                 `}
             </style>
@@ -176,8 +195,8 @@ const handleSave = async (e) => {
                                         disabled
                                         type="text"
                                         className="form-control"
-                                        placeholder="مثلاً: كلية الهندسة وتكنولوجيا المعلومات"
                                         value="IT"
+                                        placeholder="مثلاً: كلية الهندسة وتكنولوجيا المعلومات"
                                     />
                                 </div>
 
@@ -187,8 +206,8 @@ const handleSave = async (e) => {
                                         disabled
                                         type="text"
                                         className="form-control"
-                                        placeholder="مثلاً: هندسة البرمجيات"
                                         value={formData.role}
+                                        placeholder="مثلاً: هندسة البرمجيات"
                                     />
                                 </div>
 
@@ -204,15 +223,19 @@ const handleSave = async (e) => {
                                 </div>
 
                                 <div className="col-md-12">
-                                    <label className="small fw-bold mb-2 text-secondary">رابط ملف GitHub</label>
-                                    <input
-                                        type="url"
-                                        className="form-control text-start"
-                                        dir="ltr"
-                                        placeholder="https://github.com/username"
-                                        value={formData.url}
-                                        onChange={(e) => setFormData({ ...formData, url: e.target.value })}
-                                    />
+                                    <label className="small fw-bold mb-2 text-secondary">الرابط الشخصي (GitHub, LinkedIn, Instagram, YouTube)</label>
+                                    <div className="input-group" dir="ltr">
+                                        <span className="input-group-text d-flex align-items-center justify-content-center px-3" style={{ minWidth: '50px' }}>
+                                            <i className={`bi ${getLinkIcon(formData.url)}`}></i>
+                                        </span>
+                                        <input
+                                            type="url"
+                                            className="form-control text-start custom-url-input"
+                                            placeholder="https://example.com"
+                                            value={formData.url}
+                                            onChange={(e) => setFormData({ ...formData, url: e.target.value })}
+                                        />
+                                    </div>
                                 </div>
 
                                 <div className="col-md-12">
@@ -251,3 +274,5 @@ const handleSave = async (e) => {
         </div>
     );
 };
+
+export default EditProfile;

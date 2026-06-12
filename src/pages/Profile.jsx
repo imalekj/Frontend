@@ -2,7 +2,6 @@ import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import { useAuth } from '../context/AuthContext'; 
-import { apiFetch } from '../api';
 import { AppColors } from '../theme/AppColors';
 
 export const Profile = () => {
@@ -10,6 +9,7 @@ export const Profile = () => {
     const mainGreen = AppColors.primaryGreen || '#1a5d44';
     const baseUrl = import.meta.env.VITE_API_BASE_URL;
     const { user, isLoggedIn, logout } = useAuth();
+    console.log("البيانات القادمة من الـ AuthContext:", user);
 
     useEffect(() => {
         if (!isLoggedIn) {
@@ -37,7 +37,22 @@ export const Profile = () => {
         });
     };
 
+    // دالة لتحديد أيقونة ونوع الرابط المضاف ديناميكياً
+    const getLinkDetails = (url) => {
+        if (!url) return null;
+        const lowerUrl = url.toLowerCase();
+        if (lowerUrl.includes("github.com")) return { icon: "bi-github", text: "GitHub" };
+        if (lowerUrl.includes("linkedin.com")) return { icon: "bi-linkedin", text: "LinkedIn" };
+        if (lowerUrl.includes("instagram.com")) return { icon: "bi-instagram", text: "Instagram" };
+        if (lowerUrl.includes("youtube.com") || lowerUrl.includes("youtu.be")) return { icon: "bi-youtube", text: "YouTube" };
+        return { icon: "bi-link-45deg", text: "الرابط الشخصي" };
+    };
+
     if (!isLoggedIn || !user) return null;
+
+    // استخراج الرابط المضاف سواء كان مخزناً في url أو githubUrl
+    const userTargetLink = user.url || user.githubUrl;
+    const linkDetails = getLinkDetails(userTargetLink);
 
     return (
         <div className="container-fluid py-5 bg-light min-vh-100 text-end" dir="rtl" style={{ fontFamily: 'Cairo, sans-serif' }}>
@@ -63,6 +78,23 @@ export const Profile = () => {
                         padding: 6px 14px; border-radius: 10px;
                         font-size: 0.85rem; font-weight: 700; display: inline-flex; align-items: center; gap: 5px;
                     }
+                    .user-added-link {
+                        display: inline-flex;
+                        align-items: center;
+                        gap: 6px;
+                        text-decoration: none;
+                        font-size: 0.85rem;
+                        font-weight: 600;
+                        color: ${mainGreen};
+                        background: #f0f7f4;
+                        padding: 6px 14px;
+                        border-radius: 8px;
+                        transition: 0.2s;
+                    }
+                    .user-added-link:hover {
+                        background: ${mainGreen};
+                        color: white !important;
+                    }
                     .stat-box { 
                         background: #f8fafc; border: 1px solid #f1f5f9; 
                         border-radius: 18px; padding: 15px; transition: 0.3s;
@@ -71,15 +103,6 @@ export const Profile = () => {
                         background: #f1f5f9; color: #475569; padding: 6px 14px; 
                         border-radius: 8px; font-size: 0.75rem; font-weight: 600;
                     }
-                    .social-btn {
-                        width: 40px; height: 40px; border-radius: 10px;
-                        display: flex; align-items: center; justify-content: center;
-                        transition: 0.3s; text-decoration: none; border: none;
-                    }
-                    .social-btn:hover { transform: translateY(-3px); color: white; }
-                    .btn-github { background: #24292e; color: white; }
-                    .btn-linkedin { background: #0a66c2; color: white; }
-                    .btn-portfolio { background: #4f46e5; color: white; }
                     .work-item {
                         border-right: 3px solid ${mainGreen};
                         background: #fdfdfd; padding: 12px 15px; border-radius: 8px;
@@ -101,7 +124,17 @@ export const Profile = () => {
                             
                             <div className="info-section">
                                 <h4 className="fw-bold text-dark mb-1">{user.fullName}</h4>
-                                <p className="text-muted small mb-3">@{user.userName}</p>
+                                <p className="text-muted small mb-2">@{user.userName}</p>
+                                
+                                {/* إظهار الرابط المضاف من قبل المستخدم مباشرة أسفل الاسم */}
+                                {linkDetails && (
+                                    <div className="mb-3">
+                                        <a href={userTargetLink} target="_blank" rel="noopener noreferrer" className="user-added-link">
+                                            <i className={`bi ${linkDetails.icon}`}></i>
+                                            {linkDetails.text}
+                                        </a>
+                                    </div>
+                                )}
                                 
                                 <div className="role-badge mb-4">
                                     <i className="bi bi-person-badge-fill"></i> {user.role === 'student' ? 'حساب طالب' : 'حساب مشرف'}
@@ -130,30 +163,6 @@ export const Profile = () => {
                                     <p className="text-secondary small mb-0">
                                         <i className="bi bi-briefcase me-2"></i> {user.workField || "لم يتم تحديد مجال التركيز"}
                                     </p>
-                                </div>
-
-                                <div className="mb-4 text-end">
-                                    <h6 className="fw-bold text-dark small mb-2">روابط التواصل والمنصات</h6>
-                                    <div className="d-flex flex-wrap gap-2">
-                                        {user.githubUrl && (
-                                            <a href={user.githubUrl} target="_blank" rel="noopener noreferrer" className="social-btn btn-github" title="GitHub">
-                                                <i className="bi bi-github fs-5"></i>
-                                            </a>
-                                        )}
-                                        {user.linkedinUrl && (
-                                            <a href={user.linkedinUrl} target="_blank" rel="noopener noreferrer" className="social-btn btn-linkedin" title="LinkedIn">
-                                                <i className="bi bi-linkedin fs-5"></i>
-                                            </a>
-                                        )}
-                                        {user.portfolioUrl && (
-                                            <a href={user.portfolioUrl} target="_blank" rel="noopener noreferrer" className="social-btn btn-portfolio" title="المعرض الشخصي">
-                                                <i className="bi bi-globe fs-5"></i>
-                                            </a>
-                                        )}
-                                        {!user.githubUrl && !user.linkedinUrl && !user.portfolioUrl && (
-                                            <span className="text-muted small">لم يتم ربط حسابات تواصل بعد</span>
-                                        )}
-                                    </div>
                                 </div>
 
                                 <div className="text-end">
