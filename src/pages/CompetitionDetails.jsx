@@ -82,37 +82,43 @@ export const CompetitionDetails = () => {
     const handleEditPost = () => navigate(`/edit-post/${competition.projectID}`);
 
     // الدالة المحدثة باستخدام SweetAlert
-    const handleDeletePost = () => {
-        Swal.fire({
-            title: 'هل أنت متأكد؟',
-            text: "هل أنت متأكد من رغبتك في حذف هذا المنشور نهائياً؟ لا يمكن التراجع عن هذا الإجراء.",
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#dc3545', // اللون الأحمر للحذف
-            cancelButtonColor: '#6c757d',  // اللون الرمادي للإلغاء
-            confirmButtonText: 'نعم، احذفه',
-            cancelButtonText: 'إلغاء',
-            reverseButtons: true // لترتيب الأزرار بشكل صحيح في الواجهات العربية
-        }).then(async (result) => {
-            if (result.isConfirmed) {
-                try {
-                    const response = await apiFetch(`${baseUrl}api/ProjectPost/${competition.projectID}`, {
-                        method: 'DELETE'
-                    });
-
-                    if (response.ok) {
-                        toast.success("تم حذف المنشور بنجاح");
-                        navigate('/');
-                    } else {
-                        toast.error("فشل في حذف المنشور، يرجى المحاولة لاحقاً");
+ const handleDeletePost = () => {
+    Swal.fire({
+        title: 'هل أنت متأكد؟',
+        text: "هل أنت متأكد من رغبتك في حذف هذا المنشور نهائياً؟ لا يمكن التراجع عن هذا الإجراء.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'نعم، احذفه',
+        cancelButtonText: 'إلغاء',
+        reverseButtons: true
+    }).then(async (result) => {
+        if (result.isConfirmed) {
+            try {
+                const response = await apiFetch(
+                    `${baseUrl}api/PostRequests/DeleteProjectByID/${competition.projectID}`, // ✅ updated
+                    {
+                        method: 'DELETE',
+                        headers: {
+                            'Authorization': `Bearer ${token}` // ✅ add token
+                        }
                     }
-                } catch (error) {
-                    console.error("Delete error:", error);
-                    toast.error("حدث خطأ في الاتصال أثناء محاولة الحذف");
+                );
+
+                if (response.ok) {
+                    toast.success("تم حذف المنشور بنجاح");
+                    navigate('/');
+                } else {
+                    toast.error("فشل في حذف المنشور، يرجى المحاولة لاحقاً");
                 }
+            } catch (error) {
+                console.error("Delete error:", error);
+                toast.error("حدث خطأ في الاتصال أثناء محاولة الحذف");
             }
-        });
-    };
+        }
+    });
+};
 
     const handlePublisherProfileClick = () => {
         if (user2?.id) {
