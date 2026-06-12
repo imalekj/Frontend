@@ -1,21 +1,64 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import { useAuth } from '../context/AuthContext'; 
+import { apiFetch } from '../api'; // تأكد من استيراد دالة fetch المعتمدة لديك لمشروع التخرج
 import { AppColors } from '../theme/AppColors';
 
 export const Profile = () => {
     const navigate = useNavigate();
     const mainGreen = AppColors.primaryGreen || '#1a5d44';
     const baseUrl = import.meta.env.VITE_API_BASE_URL;
-    const { user, isLoggedIn, logout } = useAuth();
-    console.log("البيانات القادمة من الـ AuthContext:", user);
+    const { user, token, isLoggedIn, logout } = useAuth();
+
+    // حالات إدارة المشاريع المجلوبة من الـ API
+    const [pastProjects, setPastProjects] = useState([]);
+    const [loadingProjects, setLoadingProjects] = useState(true);
 
     useEffect(() => {
         if (!isLoggedIn) {
             navigate('/login');
         }
     }, [isLoggedIn, navigate]);
+
+    // جلب البيانات بناءً على الـ Swagger المرفق
+    useEffect(() => {
+        const fetchPastProjects = async () => {
+            // التحقق من وجود المعرف والتوكين لمنع ضرب الـ API بقيم فارغة
+            if (!token || !user?.id) return;
+            
+            try {
+                // استخدام الـ Endpoint المطابقة للصورة تماماً: /api/Profile/GetprevProjcts/{id}
+                const res = await apiFetch(`${baseUrl}api/Profile/GetprevProjcts/${user.id}`, {
+                    method: "GET",
+                    headers: {
+                        "Authorization": `Bearer ${token}`
+                    }
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    
+                    // التحقق من هيكلية البيانات المرتجعة
+                    if (Array.isArray(data)) {
+                        setPastProjects(data);
+                    } else if (data && Array.isArray(data.data)) {
+                        setPastProjects(data.data);
+                    }
+                } else {
+                    console.error("فشل في جلب المشاريع السابقة من السيرفر");
+                }
+            } catch (error) {
+                console.error("خطأ أثناء الاتصال بالسيرفر لجلب المشاريع السابقة:", error);
+            } finally {
+                setLoadingProjects(false);
+            }
+        };
+
+        if (isLoggedIn && user) {
+            fetchPastProjects();
+        }
+    }, [isLoggedIn, user, baseUrl, token]);
 
     const handleLogout = () => {
         Swal.fire({
@@ -37,7 +80,6 @@ export const Profile = () => {
         });
     };
 
-    // دالة لتحديد أيقونة ونوع الرابط المضاف ديناميكياً
     const getLinkDetails = (url) => {
         if (!url) return null;
         const lowerUrl = url.toLowerCase();
@@ -50,7 +92,6 @@ export const Profile = () => {
 
     if (!isLoggedIn || !user) return null;
 
-    // استخراج الرابط المضاف سواء كان مخزناً في url أو githubUrl
     const userTargetLink = user.url || user.githubUrl;
     const linkDetails = getLinkDetails(userTargetLink);
 
@@ -79,22 +120,12 @@ export const Profile = () => {
                         font-size: 0.85rem; font-weight: 700; display: inline-flex; align-items: center; gap: 5px;
                     }
                     .user-added-link {
-                        display: inline-flex;
-                        align-items: center;
-                        gap: 6px;
-                        text-decoration: none;
-                        font-size: 0.85rem;
-                        font-weight: 600;
-                        color: ${mainGreen};
-                        background: #f0f7f4;
-                        padding: 6px 14px;
-                        border-radius: 8px;
-                        transition: 0.2s;
+                        display: inline-flex; align-items: center; gap: 6px;
+                        text-decoration: none; font-size: 0.85rem; font-weight: 600;
+                        color: ${mainGreen}; background: #f0f7f4; padding: 6px 14px;
+                        border-radius: 8px; transition: 0.2s;
                     }
-                    .user-added-link:hover {
-                        background: ${mainGreen};
-                        color: white !important;
-                    }
+                    .user-added-link:hover { background: ${mainGreen}; color: white !important; }
                     .stat-box { 
                         background: #f8fafc; border: 1px solid #f1f5f9; 
                         border-radius: 18px; padding: 15px; transition: 0.3s;
@@ -126,7 +157,6 @@ export const Profile = () => {
                                 <h4 className="fw-bold text-dark mb-1">{user.fullName}</h4>
                                 <p className="text-muted small mb-2">@{user.userName}</p>
                                 
-                                {/* إظهار الرابط المضاف من قبل المستخدم مباشرة أسفل الاسم */}
                                 {linkDetails && (
                                     <div className="mb-3">
                                         <a href={userTargetLink} target="_blank" rel="noopener noreferrer" className="user-added-link">
@@ -196,7 +226,8 @@ export const Profile = () => {
                             </div>
                             <div className="col-6">
                                 <div className="stat-box">
-                                    <h4 className="fw-bold mb-0 text-warning">{user.pastProjects?.length || 0}</h4>
+                                    {/* عرض عدد المشاريع المجلوبة ديناميكياً من الـ API */}
+                                    <h4 className="fw-bold mb-0 text-warning">{pastProjects.length}</h4>
                                     <small className="text-muted fw-600">أعمال ومشاريع منجزة</small>
                                 </div>
                             </div>
@@ -207,11 +238,14 @@ export const Profile = () => {
                                 <i className="bi bi-collection text-success"></i> المعرض والأعمال السابقة
                             </h6>
                             <div className="row g-3 text-end">
-                                {user.pastProjects && user.pastProjects.length > 0 ? (
-                                    user.pastProjects.map((project, index) => (
-                                        <div key={index} className="col-md-6">
-                                            <a href={project.link} target="_blank" rel="noreferrer" className="work-item">
-                                                <h6 className="fw-bold mb-1 small text-dark">{project.title}</h6>
+                                {loadingProjects ? (
+                                    <p className="text-muted small text-center py-3">جاري تحميل المشاريع السابقة...</p>
+                                ) : pastProjects.length > 0 ? (
+                                    pastProjects.map((project, index) => (
+                                        <div key={project.id || index} className="col-md-6">
+                                            {/* ربط الحقول الديناميكية بناءً على ما يرجعه السيرفر (title أو projectName) */}
+                                            <a href={project.link || project.projectLink || "#"} target="_blank" rel="noreferrer" className="work-item">
+                                                <h6 className="fw-bold mb-1 small text-dark">{project.title || project.projectName || "مشروع غير مسمى"}</h6>
                                                 <span className="text-muted" style={{ fontSize: '0.7rem' }}>
                                                     <i className="bi bi-box-arrow-up-right me-1"></i> عرض تفاصيل العمل
                                                 </span>

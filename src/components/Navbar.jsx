@@ -13,13 +13,13 @@ export const Navbar = () => {
     const [userInfo, setUserInfo] = useState(null);
     const [showUserDropdown, setShowUserDropdown] = useState(false);
     const [showNotifDropdown, setShowNotifDropdown] = useState(false);
-    const [searchQuery, setSearchQuery] = useState("");
     const navigate = useNavigate();
     const userRef = useRef(null);
     const notifRef = useRef(null);
     const [notifications, setNotifications] = useState([]);
     const [notifCount, setNotifCount] = useState(0);
     const [specializationName, setSpecializationName] = useState('');
+
     useEffect(() => {
         const fetchUser = async () => {
             if (!user?.id) return;
@@ -56,29 +56,29 @@ export const Navbar = () => {
     }, [user?.id, token, baseUrl]);
     
     useEffect(() => {
-    const fetchSpecialization = async () => {
-        if (!user?.id) return;
+        const fetchSpecialization = async () => {
+            if (!user?.id) return;
 
-        try {
-            const response = await apiFetch(
-                `${baseUrl}api/Profile/GetSpecialistNameByUserId/${user.id}`
-            );
+            try {
+                const response = await apiFetch(
+                    `${baseUrl}api/Profile/GetSpecialistNameByUserId/${user.id}`
+                );
 
-            if (!response.ok) {
-                throw new Error('Failed to fetch specialization');
+                if (!response.ok) {
+                    throw new Error('Failed to fetch specialization');
+                }
+
+                const data = await response.text();
+                setSpecializationName(data);
+                console.log('Specialization:', data);
+            } catch (error) {
+                console.error('Error fetching specialization:', error);
             }
+        };
 
-            const data = await response.text(); // or response.text()
-            setSpecializationName(data);
+        fetchSpecialization();
+    }, [user?.id, baseUrl]);
 
-            console.log('Specialization:', data);
-        } catch (error) {
-            console.error('Error fetching specialization:', error);
-        }
-    };
-
-    fetchSpecialization();
-}, [user?.id, baseUrl]);
     const handleLogout = () => {
         setShowUserDropdown(false);
         Swal.fire({
@@ -107,25 +107,12 @@ export const Navbar = () => {
         });
     };
 
-
-const imageUrl = `${baseUrl}${userInfo?.imagePath}`;
+    const imageUrl = `${baseUrl}${userInfo?.imagePath}`;
     
-    console.log(imageUrl);
-    const handleSearch = (e) => {
-        if (e.key === 'Enter' && searchQuery.trim() !== "") {
-            navigate(`/leaderboard?search=${searchQuery}`);
-        }
-    };
-
-  
-   
     return (
         <nav className="navbar navbar-expand-lg navbar-light bg-white border-bottom sticky-top py-2" dir="rtl" style={{ fontFamily: 'Cairo, sans-serif' }}>
             <style>
                 {`
-                    .search-container { max-width: 200px; transition: all 0.3s ease; }
-                    .search-container:focus-within { max-width: 260px; }
-                    .search-input { background: #f1f5f9; border: none; border-radius: 10px; padding: 7px 35px 7px 15px; font-size: 0.85rem; }
                     .nav-link { font-weight: 600; color: #64748b !important; font-size: 0.9rem; transition: 0.2s; }
                     .nav-link:hover { color: ${AppColors.primaryGreen} !important; }
                     .nav-link.active { color: ${AppColors.primaryGreen} !important; background: rgba(26, 93, 68, 0.05); border-radius: 8px; }
@@ -155,23 +142,9 @@ const imageUrl = `${baseUrl}${userInfo?.imagePath}`;
                         <li className="nav-item"><NavLink className="nav-link px-3" to="/competitions">المسابقات</NavLink></li>
                         <li className="nav-item"><NavLink className="nav-link px-3" to="/leaderboard">المتصدرين</NavLink></li>
                         {isLoggedIn && (
-                            <>
-                                <li className="nav-item"><NavLink className="nav-link px-3" to="/my-teams">فرقي</NavLink></li>
-                            </>
+                            <li className="nav-item"><NavLink className="nav-link px-3" to="/my-teams">فرقي</NavLink></li>
                         )}
                     </ul>
-
-                    <div className="search-container position-relative ms-lg-4 d-none d-lg-block">
-                        <i className="bi bi-search position-absolute" style={{ right: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', fontSize: '0.8rem' }}></i>
-                        <input
-                            type="text"
-                            className="form-control search-input text-end shadow-sm"
-                            placeholder="ابحث عن زملاء أو مشاريع..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            onKeyDown={handleSearch}
-                        />
-                    </div>
                 </div>
 
                 <div className="d-flex align-items-center gap-2 order-1 order-lg-2 me-auto me-lg-0 ms-2">
@@ -213,7 +186,7 @@ const imageUrl = `${baseUrl}${userInfo?.imagePath}`;
                                     <div className="text-end d-none d-xl-block">
                                         <div className="fw-bold text-dark lh-1" style={{ fontSize: '0.85rem' }}>{user?.fullName || "مستخدم"}</div>
                                         <small className="text-muted" style={{ fontSize: '0.7rem' }}>
-                                                    {specializationName}
+                                            {specializationName}
                                         </small>
                                     </div>
                                     <img 
@@ -248,3 +221,5 @@ const imageUrl = `${baseUrl}${userInfo?.imagePath}`;
         </nav>
     );
 };
+
+export default Navbar;

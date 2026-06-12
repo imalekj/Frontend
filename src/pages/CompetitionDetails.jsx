@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { apiFetch } from '../api';
 import { AppColors } from '../theme/AppColors'; 
 import { toast } from 'react-hot-toast';
-import Swal from 'sweetalert2'; // استيراد الـ SweetAlert
+import Swal from 'sweetalert2'; 
 
 export const CompetitionDetails = () => {
     const { id } = useParams();
@@ -16,11 +16,6 @@ export const CompetitionDetails = () => {
     const baseUrl = import.meta.env.VITE_API_BASE_URL;
     const userData = user; 
 
-    const [commentText, setCommentText] = useState("");
-    const [comments, setComments] = useState([
-        { id: 1, name: "سارة محمود", text: "هل يمكن لطلاب السنة الأولى المشاركة؟", date: "منذ ساعة", avatar: "https://static.vecteezy.com/system/resources/thumbnails/009/292/244/small/default-avatar-icon-of-social-media-user-vector.jpg" },
-        { id: 2, name: "عمر خالد", text: "بالتوفيق للجميع، تحدي رائع!", date: "منذ 3 ساعات", avatar: "https://static.vecteezy.com/system/resources/thumbnails/009/292/244/small/default-avatar-icon-of-social-media-user-vector.jpg" }
-    ]);
     const [competition, setCompetition] = useState(null);
     const [loading, setLoading] = useState(true);
 
@@ -52,22 +47,6 @@ export const CompetitionDetails = () => {
         fetchData();
     }, [id]);
 
-    const handleAddComment = (e) => {
-        e.preventDefault();
-        if (!commentText.trim()) return;
-        
-        const newComment = {
-            id: Date.now(),
-            name: userData?.name || "مستخدم جديد",
-            text: commentText,
-            date: "الآن",
-            avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${userData?.name || 'user'}`
-        };
-        
-        setComments([newComment, ...comments]);
-        setCommentText("");
-    };
-
     const handleApply = () => {
         if (!competition?.projectID) return;
         if (isLoggedIn) {
@@ -81,18 +60,17 @@ export const CompetitionDetails = () => {
     
     const handleEditPost = () => navigate(`/edit-post/${competition.projectID}`);
 
-    // الدالة المحدثة باستخدام SweetAlert
     const handleDeletePost = () => {
         Swal.fire({
             title: 'هل أنت متأكد؟',
             text: "هل أنت متأكد من رغبتك في حذف هذا المنشور نهائياً؟ لا يمكن التراجع عن هذا الإجراء.",
             icon: 'warning',
             showCancelButton: true,
-            confirmButtonColor: '#dc3545', // اللون الأحمر للحذف
-            cancelButtonColor: '#6c757d',  // اللون الرمادي للإلغاء
+            confirmButtonColor: '#dc3545', 
+            cancelButtonColor: '#6c757d',  
             confirmButtonText: 'نعم، احذفه',
             cancelButtonText: 'إلغاء',
-            reverseButtons: true // لترتيب الأزرار بشكل صحيح في الواجهات العربية
+            reverseButtons: true 
         }).then(async (result) => {
             if (result.isConfirmed) {
                 try {
@@ -166,10 +144,6 @@ export const CompetitionDetails = () => {
                     .skill-badge:hover { background: ${AppColors.primaryGreen || '#1a5d44'}; color: white; }
                     .btn-action { background: ${AppColors.primaryGreen || '#1a5d44'}; color: white; border: none; padding: 14px; border-radius: 12px; font-weight: 700; width: 100%; transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: 0 4px 12px rgba(26, 93, 68, 0.15); }
                     .btn-action:hover { opacity: 0.95; transform: translateY(-3px); box-shadow: 0 6px 20px rgba(26, 93, 68, 0.25); }
-                    .comment-box { background: #fdfdfd; border-radius: 16px; padding: 18px; margin-bottom: 16px; border: 1px solid #f0f0f0; border-right: 4px solid ${AppColors.primaryGreen || '#1a5d44'}; transition: 0.2s; }
-                    .comment-box:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.02); }
-                    .comment-input { background: #f8f9fa; border-radius: 12px; border: 1.5px solid ${AppColors.borderInput || '#e0e0e0'}; padding: 14px; font-size: 0.9rem; color: ${AppColors.textPrimary || '#2c3e50'}; transition: 0.3s; }
-                    .comment-input:focus { border-color: ${AppColors.primaryGreen || '#1a5d44'}; box-shadow: 0 0 0 4px rgba(26, 93, 68, 0.08); outline: none; background: #fff; }
                     .section-title { font-weight: 800; color: #2c3e50; position: relative; padding-right: 12px; margin-bottom: 20px; }
                     .section-title::before { content: ''; position: absolute; right: 0; top: 15%; height: 70%; width: 4px; background: ${AppColors.primaryGreen || '#1a5d44'}; border-radius: 2px; }
                     .custom-badge { font-weight: 700; font-size: 0.85rem; padding: 8px 16px; border-radius: 10px; }
@@ -232,50 +206,6 @@ export const CompetitionDetails = () => {
                                     )) : <span className="text-muted small italic">متاح لجميع التخصصات والشروط العامة</span>}
                                 </div>
                             </div>
-                        </div>
-                    </div>
-
-                    <hr className="my-5 opacity-25" />
-
-                    <div className="mt-4">
-                        <h5 className="section-title fs-6">استفسارات وتواصل اجتماعي ({comments.length})</h5>
-                        
-                        {isLoggedIn ? (
-                            <form onSubmit={handleAddComment} className="mb-4 bg-white p-3 rounded-4 shadow-sm border border-light">
-                                <div className="mb-3">
-                                    <textarea 
-                                        className="form-control comment-input" 
-                                        rows="3" 
-                                        placeholder="هل لديك سؤال لصاحب المنشور؟ اطرح استفسارك هنا بكل وضوح..."
-                                        value={commentText}
-                                        onChange={(e) => setCommentText(e.target.value)}
-                                    ></textarea>
-                                </div>
-                                <div className="text-start">
-                                    <button type="submit" className="btn btn-sm text-white px-4 fw-bold" style={{background: AppColors.primaryGreen || '#1a5d44', borderRadius: '10px', padding: '8px 20px'}}>
-                                        إرسال الاستفسار <i className="bi bi-send-fill ms-1"></i>
-                                    </button>
-                                </div>
-                            </form>
-                        ) : (
-                            <div className="alert alert-warning border-0 text-center small mb-4 py-3 rounded-4 shadow-sm">
-                                <i className="bi bi-lock-fill me-1"></i> يرجى <span className="text-success fw-bold text-decoration-underline" style={{cursor:'pointer'}} onClick={()=>navigate('/login')}>تسجيل الدخول</span> لتتمكن من إضافة تعليق أو طرح استفسار.
-                            </div>
-                        )}
-
-                        <div className="comments-list mt-3">
-                            {comments.map(comment => (
-                                <div key={comment.id} className="comment-box shadow-sm">
-                                    <div className="d-flex justify-content-between mb-2">
-                                        <div className="d-flex align-items-center gap-2">
-                                            <img src={comment.avatar} width="32" height="32" className="rounded-circle border" alt="avatar" />
-                                            <span className="fw-bold text-dark small">{comment.name}</span>
-                                        </div>
-                                        <small className="text-muted" style={{fontSize: '0.7rem silent'}}><i className="bi bi-clock me-1"></i> {comment.date}</small>
-                                    </div>
-                                    <p className="mb-0 small text-secondary" style={{marginRight: '40px', lineHeight: '1.6'}}>{comment.text}</p>
-                                </div>
-                            ))}
                         </div>
                     </div>
                 </div>
