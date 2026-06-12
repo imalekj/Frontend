@@ -28,6 +28,7 @@ export const RegistrationPage = () => {
         teamMembers: [] 
     });
 
+
     useEffect(() => {
         if (user?.studentId) {
             setFormData(prev => ({
