@@ -27,18 +27,37 @@ export const Dashboard = () => {
                 
                 const dataArray = Array.isArray(data) ? data : [];
                 
-                const formatted = dataArray.map(comp => ({
-                    id: comp.projectID,
-                    title: comp.name,
-                    description: comp.descriptions,
-                    rating: comp.rating,
-                    isGraduation: comp.isGraduationProject,
-                    endDate: comp.endDate,
-                    skills: comp.skills,
-                    availableSeats: comp.numberOfAvailableSeats,
-                    location: comp.projectLocation,
-                    teamType: comp.teamType
-                }));
+                // الوقت الحالي للمقارنة والتحقق من التواريخ المنتهية
+                const now = new Date();
+
+                const formatted = dataArray
+                    .map(comp => ({
+                        id: comp.projectID,
+                        title: comp.name,
+                        description: comp.descriptions,
+                        rating: comp.rating,
+                        isGraduation: comp.isGraduationProject,
+                        endDate: comp.endDate,
+                        skills: comp.skills,
+                        availableSeats: comp.numberOfAvailableSeats,
+                        location: comp.projectLocation,
+                        teamType: comp.teamType,
+                        // نستخدم تاريخ الإنشاء أو تاريخ الانتهاء للترتيب إذا لم يتوفر الموعد الأصلي
+                        creationDate: comp.creationDate || comp.id 
+                    }))
+                    // 1. تصفية المسابقات: إظهار الفعالة فقط (التي تاريخ انتهائها مستقبلي أو غير محدد "مفتوح")
+                    .filter(comp => {
+                        if (!comp.endDate) return true; // إذا لم يوجد تاريخ انتهاء تعتبر فعالة دائماً
+                        return new Date(comp.endDate) >= now;
+                    })
+                    // 2. الترتيب وفق الأحدث: ترتيب تنازلي (من الأحدث للأقدم)
+                    // ملاحظة: إذا كان الـ API يوفر حقل مثل creationDate يفضل استخدامه، هنا رتبنا بحسب تاريخ الانتهاء أو المعرّف كبديل.
+                    .sort((a, b) => {
+                        const dateA = a.endDate ? new Date(a.endDate) : 0;
+                        const dateB = b.endDate ? new Date(b.endDate) : 0;
+                        return dateB - dateA; // الأحدث ينتهي أولاً أو المضاف حديثاً
+                    });
+
                 setCompetitions(formatted);
             } catch (err) {
                 console.error("Error fetching competitions:", err);
@@ -237,6 +256,12 @@ export const Dashboard = () => {
                         <div className="spinner-border text-success" role="status"></div>
                         <p className="text-muted mt-2 small">جاري تحميل المنشورات المتاحة...</p>
                     </div>
+                ) : competitions.length === 0 ? (
+                    <div className="text-center py-5 bg-white rounded-4 border shadow-sm">
+                        <i className="bi bi-folder-x text-muted display-4 d-block mb-3"></i>
+                        <h6 className="fw-bold text-secondary">لا توجد مسابقات نشطة حالياً</h6>
+                        <p className="text-muted small mb-0">جميع المسابقات السابقة انتهت صلاحيتها وجاري التحضير لمسابقات جديدة.</p>
+                    </div>
                 ) : (
                     <div className="row g-4">
                         {competitions.slice(0, 6).map(comp => (
@@ -330,3 +355,5 @@ export const Dashboard = () => {
         </div>
     );
 };
+
+export default Dashboard;

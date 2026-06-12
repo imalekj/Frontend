@@ -56,9 +56,17 @@ export const CompetitionsPage = () => {
                     .toLowerCase()
                     .includes(searchTerm.toLowerCase());
 
-            return matchesTab && matchesFaculty && matchesSearch;
+            // استبعاد العناصر المنتهية
+            const isNotExpired = !item.endDate || new Date(item.endDate) >= new Date();
+
+            return matchesTab && matchesFaculty && matchesSearch && isNotExpired;
         })
-        .sort((a, b) => b.projectID - a.projectID);
+        .sort((a, b) => {
+            if (a.endDate && b.endDate) {
+                return new Date(a.endDate) - new Date(b.endDate);
+            }
+            return b.projectID - a.projectID;
+        });
 
     const handleCreatePost = () => {
         navigate('/create-post');
@@ -283,7 +291,8 @@ export const CompetitionsPage = () => {
                                             </span>
                                             <span className="fw-semibold small d-flex align-items-center gap-1" style={{ color: AppColors.textSecondary }}>
                                                 <i className="bi bi-calendar-event" style={{ color: AppColors.textHint }}></i>
-                                                {item.endDate ? new Date(item.endDate).toLocaleDateString('ar-EG', { month: 'short', day: 'numeric' }) : ""}
+                                                {/* عرض التاريخ كاملاً (يوم شهر سنة) */}
+                                                {item.endDate ? new Date(item.endDate).toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' }) : ""}
                                             </span>
                                         </div>
 
